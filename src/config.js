@@ -1,0 +1,85 @@
+// === Configuración central de Nova Casino ===
+// Cambia aquí el nombre de la moneda, colores, límites y economía.
+module.exports = {
+  casino: {
+    name: 'Nova Casino',
+    tagline: 'Juega, apuesta y presume — todo con fichas ficticias.',
+  },
+
+  currency: {
+    name: 'Nova',
+    symbol: '💎',
+    ticker: '◆',
+  },
+
+  economy: {
+    startingBalance: 1000,   // saldo inicial de un usuario nuevo
+    dailyAmount: 500,        // recompensa diaria base
+    dailyStreakBonus: 100,   // bonus por cada día de racha
+    dailyStreakMax: 10,      // tope de días de racha que dan bonus
+    dailyCooldown: 22 * 60 * 60 * 1000,  // se puede reclamar cada 22h
+    streakResetAfter: 48 * 60 * 60 * 1000, // si pasas de 48h pierdes la racha
+    workMin: 75,
+    workMax: 350,
+    workCooldown: 30 * 60 * 1000, // 30 min
+  },
+
+  limits: {
+    minBet: 10,
+    maxBet: 250000,
+  },
+
+  colors: {
+    primary: 0x9b5de5, // morado Nova
+    gold: 0xf5c518,
+    green: 0x2ecc71,
+    red: 0xe74c3c,
+    dark: 0x1e1e2e,
+    blurple: 0x5865f2,
+  },
+
+  // IDs de los "owners" del bot que pueden usar comandos de administración
+  // (p. ej. /admin-saldo). El dueño del servidor SIEMPRE puede, esté o no aquí.
+  owners: [],
+
+  // Canal donde se registra cada partida (ID del canal de Discord).
+  // Deja '' para desactivar el log. El bot debe poder escribir en ese canal.
+  logChannel: '1524779532127699095',
+
+  // Canal por defecto donde se publican los mercados de apuestas.
+  // Al crear un mercado se puede indicar otro canal con la opción `canal`.
+  betChannel: '1526682410773909535',
+
+  // Lotería: se compran boletos para un bote común y hay un sorteo programado.
+  lottery: {
+    ticketPrice: 10, // coste de cada boleto
+    houseCut: 0.1, // 10% del bote se queda la casa; el resto va al ganador
+    drawIntervalMs: 24 * 60 * 60 * 1000, // sorteo cada 24 h
+    minParticipants: 2, // con menos participantes se reembolsa (no se sortea)
+    channel: '', // canal donde se anuncia el sorteo (vacío = sin anuncio)
+  },
+
+  // Rol obligatorio para poder jugar (ID del rol de Discord).
+  // Si está vacío (''), cualquiera puede jugar. Si tiene un ID, solo quien
+  // tenga ese rol podrá usar los juegos. El ID del rol tampoco cambia al
+  // renombrarlo. (Afecta a los juegos listados en `channels`.)
+  requiredRole: '1524582072042127520',
+
+  // Canal donde se permite cada juego (ID del canal de Discord).
+  // - Deja '' para permitir ese juego en cualquier canal.
+  // - Puedes poner varios: ['id1', 'id2'].
+  // - El ID no cambia aunque renombres o muevas el canal.
+  channels: {
+    slots: '1524477258889429042',
+    ruleta: '1524477213804728432',
+    blackjack: '1524477313893535814',
+    poker: '1524477290803626137',
+    mines: '1524477274152505477',
+    hilo: '1524786887812845588',
+    dados: '1524786845257564231',
+    carrera: '1524573678942162998',
+    cripto: '1524581206300295288',
+    coinflip: '1524786859891363991',
+    loteria: '1524786970793087016',
+  },
+};

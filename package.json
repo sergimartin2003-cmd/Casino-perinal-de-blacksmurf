@@ -1,0 +1,19 @@
+{
+  "name": "nova-casino-bot",
+  "version": "1.0.0",
+  "description": "Bot de casino para Discord con economía ficticia — tragaperras, ruleta, blackjack, video poker, mines y predicción de cripto.",
+  "main": "src/index.js",
+  "type": "commonjs",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "deploy": "node src/deploy-commands.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.11.1",
+    "discord.js": "^14.17.3",
+    "dotenv": "^16.4.7"
+  }
+}
