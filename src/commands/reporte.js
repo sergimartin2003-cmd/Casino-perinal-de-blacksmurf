@@ -1,5 +1,5 @@
-const { SlashCommandBuilder, MessageFlags } = require('discord.js');
-const { isOwner } = require('../lib/owner');
+const { SlashCommandBuilder, PermissionFlagsBits, MessageFlags } = require('discord.js');
+const { isStaff } = require('../lib/owner');
 const dailyReport = require('../lib/dailyReport');
 const config = require('../config');
 
@@ -8,12 +8,14 @@ const pad = (n) => String(n).padStart(2, '0');
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('reporte')
-    .setDescription('📊 (Solo owners) Previsualiza el reporte diario del casino de hoy.'),
+    .setDescription('📊 (admin/owner) Previsualiza el reporte diario del casino de hoy.')
+    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
+    .setDMPermission(false),
 
   async execute(interaction) {
-    if (!isOwner(interaction)) {
+    if (!isStaff(interaction)) {
       return interaction.reply({
-        content: '❌ Solo los owners pueden ver el reporte.',
+        content: '❌ Solo admins/owners pueden ver el reporte.',
         flags: MessageFlags.Ephemeral,
       });
     }

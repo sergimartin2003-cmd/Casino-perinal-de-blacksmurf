@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, PermissionFlagsBits, MessageFlags } = require('discord.js');
-const { isOwner } = require('../lib/owner');
+const { isStaff } = require('../lib/owner');
 const backup = require('../lib/backup');
 const { fmt } = require('../lib/format');
 const config = require('../config');
@@ -7,13 +7,13 @@ const config = require('../config');
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('backup')
-    .setDescription('🗄️ (Solo owners) Hace una copia de seguridad de la base de datos ahora mismo.')
+    .setDescription('🗄️ (admin/owner) Hace una copia de seguridad de la base de datos ahora mismo.')
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
     .setDMPermission(false),
 
   async execute(interaction) {
-    if (!isOwner(interaction)) {
-      return interaction.reply({ content: '❌ Solo los owners pueden hacer backups.', flags: MessageFlags.Ephemeral });
+    if (!isStaff(interaction)) {
+      return interaction.reply({ content: '❌ Solo admins/owners pueden hacer backups.', flags: MessageFlags.Ephemeral });
     }
 
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });

@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, MessageFlags } = require('discord.js');
 const { buyTickets, snapshot, draw } = require('../lib/lottery');
-const { isOwner } = require('../lib/owner');
+const { isStaff } = require('../lib/owner');
 const { base } = require('../lib/embeds');
 const { coins, fmt } = require('../lib/format');
 const config = require('../config');
@@ -59,8 +59,8 @@ module.exports = {
     }
 
     if (sub === 'sortear') {
-      if (!isOwner(interaction)) {
-        return interaction.reply({ content: '❌ Solo los **owners** pueden forzar el sorteo.', flags: MessageFlags.Ephemeral });
+      if (!isStaff(interaction)) {
+        return interaction.reply({ content: '❌ Solo **admins/owners** pueden forzar el sorteo.', flags: MessageFlags.Ephemeral });
       }
       await interaction.deferReply({ flags: MessageFlags.Ephemeral });
       const res = await draw(interaction.client);

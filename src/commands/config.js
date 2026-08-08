@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, PermissionFlagsBits, ChannelType, MessageFlags } = require('discord.js');
-const { isOwner } = require('../lib/owner');
+const { isStaff } = require('../lib/owner');
 const settings = require('../lib/settings');
 const { base } = require('../lib/embeds');
 const { fmt } = require('../lib/format');
@@ -17,7 +17,7 @@ const showChannels = (v) =>
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('config')
-    .setDescription('⚙️ (Solo owners) Ajusta el casino desde Discord (se guarda, sin reiniciar).')
+    .setDescription('⚙️ (admin/owner) Ajusta el casino desde Discord (se guarda, sin reiniciar).')
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
     .setDMPermission(false)
     .addSubcommand((s) => s.setName('ver').setDescription('Muestra toda la configuración actual.'))
@@ -83,8 +83,8 @@ module.exports = {
     ),
 
   async execute(interaction) {
-    if (!isOwner(interaction)) {
-      return interaction.reply({ content: '❌ Solo los owners pueden tocar la configuración.', flags: MessageFlags.Ephemeral });
+    if (!isStaff(interaction)) {
+      return interaction.reply({ content: '❌ Solo admins/owners pueden tocar la configuración.', flags: MessageFlags.Ephemeral });
     }
     const sub = interaction.options.getSubcommand();
     const sym = config.currency.symbol;

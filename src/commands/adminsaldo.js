@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, PermissionFlagsBits, MessageFlags } = require('discord.js');
 const { getUser, addBalance, setBalance } = require('../lib/economy');
-const { isOwner } = require('../lib/owner');
+const { isStaff } = require('../lib/owner');
 const { recordSale } = require('../lib/dailyReport');
 const { base } = require('../lib/embeds');
 const { coins, fmt } = require('../lib/format');
@@ -9,8 +9,8 @@ const config = require('../config');
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('admin-saldo')
-    .setDescription('👑 (Solo owners) Añade, quita o fija el saldo de un usuario.')
-    // Oculta el comando a los usuarios normales; el filtro real es isOwner().
+    .setDescription('👑 (admin/owner) Añade, quita o fija el saldo de un usuario.')
+    // Oculta el comando a los usuarios normales; el filtro real es isStaff().
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
     .setDMPermission(false)
     .addStringOption((o) =>
@@ -30,9 +30,9 @@ module.exports = {
     ),
 
   async execute(interaction) {
-    if (!isOwner(interaction)) {
+    if (!isStaff(interaction)) {
       return interaction.reply({
-        content: '❌ Solo los **owners** pueden usar este comando.',
+        content: '❌ Solo **admins/owners** pueden usar este comando.',
         flags: MessageFlags.Ephemeral,
       });
     }

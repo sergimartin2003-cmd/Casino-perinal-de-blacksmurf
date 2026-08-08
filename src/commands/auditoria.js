@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, PermissionFlagsBits, MessageFlags } = require('discord.js');
-const { isOwner } = require('../lib/owner');
+const { isStaff } = require('../lib/owner');
 const audit = require('../lib/audit');
 const { base } = require('../lib/embeds');
 const { fmt } = require('../lib/format');
@@ -12,7 +12,7 @@ const signed = (n) => `${n >= 0 ? '+' : ''}${fmt(n)}`;
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('auditoria')
-    .setDescription('🔍 (Solo owners) Audita apuestas y transferencias para detectar trampas.')
+    .setDescription('🔍 (admin/owner) Audita apuestas y transferencias para detectar trampas.')
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
     .setDMPermission(false)
     .addSubcommand((s) =>
@@ -29,8 +29,8 @@ module.exports = {
     ),
 
   async execute(interaction) {
-    if (!isOwner(interaction)) {
-      return interaction.reply({ content: '❌ Solo los owners pueden auditar.', flags: MessageFlags.Ephemeral });
+    if (!isStaff(interaction)) {
+      return interaction.reply({ content: '❌ Solo admins/owners pueden auditar.', flags: MessageFlags.Ephemeral });
     }
     const sub = interaction.options.getSubcommand();
 

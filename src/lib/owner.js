@@ -1,3 +1,4 @@
+const { PermissionFlagsBits } = require('discord.js');
 const config = require('../config');
 
 /** ¿Quien ejecuta es owner del bot (config.owners) o dueño del servidor? */
@@ -8,4 +9,10 @@ function isOwner(interaction) {
   return false;
 }
 
-module.exports = { isOwner };
+/** ¿Es "staff"? = owner (arriba) O Administrador del servidor. */
+function isStaff(interaction) {
+  if (isOwner(interaction)) return true;
+  return interaction.memberPermissions?.has(PermissionFlagsBits.Administrator) ?? false;
+}
+
+module.exports = { isOwner, isStaff };

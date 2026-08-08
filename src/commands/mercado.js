@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits, ChannelType, MessageFlags } = require('discord.js');
-const { isOwner } = require('../lib/owner');
+const { isStaff } = require('../lib/owner');
 const { base } = require('../lib/embeds');
 const { coins, fmt } = require('../lib/format');
 const config = require('../config');
@@ -87,9 +87,9 @@ module.exports = {
 
   async execute(interaction) {
     const sub = interaction.options.getSubcommand();
-    const ownerOnly = ['crear', 'partido', 'cerrar', 'resolver', 'cancelar'];
-    if (ownerOnly.includes(sub) && !isOwner(interaction)) {
-      return interaction.reply({ content: '❌ Solo los **owners** pueden gestionar mercados.', flags: MessageFlags.Ephemeral });
+    const staffOnly = ['crear', 'partido', 'cerrar', 'resolver', 'cancelar'];
+    if (staffOnly.includes(sub) && !isStaff(interaction)) {
+      return interaction.reply({ content: '❌ Solo **admins/owners** pueden gestionar mercados.', flags: MessageFlags.Ephemeral });
     }
 
     if (sub === 'partido') {

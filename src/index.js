@@ -27,7 +27,7 @@ const invites = require('./lib/invites');
 const dailyReport = require('./lib/dailyReport');
 const antifraud = require('./lib/antifraud');
 const backup = require('./lib/backup');
-const { isOwner } = require('./lib/owner');
+const { isStaff } = require('./lib/owner');
 const { resolveBet } = require('./lib/bet');
 const { getUser } = require('./lib/economy');
 const { fmt } = require('./lib/format');
@@ -110,7 +110,7 @@ async function handleBetModal(interaction) {
 
 // --- Crear mercado de un evento real: elegir enfrentamiento -> pedir cuotas ---
 async function handleMatchPick(interaction) {
-  if (!isOwner(interaction)) return interaction.reply({ content: '❌ Solo los owners abren mercados.', flags: MessageFlags.Ephemeral }).catch(() => {});
+  if (!isStaff(interaction)) return interaction.reply({ content: '❌ Solo admins/owners abren mercados.', flags: MessageFlags.Ephemeral }).catch(() => {});
   const [, leagueKey, eventId, channelId] = interaction.customId.split(':');
   const f = (await espn.fetchFixtures(leagueKey)).find((x) => String(x.id) === String(eventId));
   const home = f?.home || 'Local / A';
@@ -140,7 +140,7 @@ async function handleMatchPick(interaction) {
 }
 
 async function handleMatchOdds(interaction) {
-  if (!isOwner(interaction)) return interaction.reply({ content: '❌ Solo los owners abren mercados.', flags: MessageFlags.Ephemeral }).catch(() => {});
+  if (!isStaff(interaction)) return interaction.reply({ content: '❌ Solo admins/owners abren mercados.', flags: MessageFlags.Ephemeral }).catch(() => {});
   const [, leagueKey, eventId, channelId] = interaction.customId.split(':');
   const draw = espn.hasDraw(leagueKey);
   const parse = (v) => {
@@ -213,10 +213,10 @@ client.on(Events.InteractionCreate, async (interaction) => {
   if (!command) return;
 
   const isGame = Object.prototype.hasOwnProperty.call(config.channels ?? {}, interaction.commandName);
-  const isStaff = isOwner(interaction) || interaction.memberPermissions?.has(PermissionFlagsBits.Administrator);
+  const staff = isStaff(interaction);
 
   // Rol "jugador" obligatorio para usar CUALQUIER comando del bot (salvo admins/owners).
-  if (config.requiredRole && !isStaff) {
+  if (config.requiredRole && !staff) {
     if (!interaction.inGuild()) {
       return interaction
         .reply({ content: '❌ Este bot solo se puede usar dentro del servidor.', flags: MessageFlags.Ephemeral })
@@ -247,7 +247,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
   // Rol obligatorio POR JUEGO (además del global), salvo admins/owners.
   const gameRole = config.gameRoles?.[interaction.commandName];
-  if (gameRole && !isStaff && !memberHasRole(interaction.member, gameRole)) {
+  if (gameRole && !staff && !memberHasRole(interaction.member, gameRole)) {
     return interaction
       .reply({
         content: `❌ Para **/${interaction.commandName}** necesitas el rol <@&${gameRole}>.`,
