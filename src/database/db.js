@@ -107,6 +107,20 @@ CREATE TABLE IF NOT EXISTS transfers (
 CREATE INDEX IF NOT EXISTS idx_transfers_from ON transfers (from_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_transfers_to ON transfers (to_id, created_at);
 
+-- Auditoría: acciones de admin sobre saldos (/admin-saldo). Quién ajustó a quién.
+CREATE TABLE IF NOT EXISTS admin_actions (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  actor_id   TEXT NOT NULL,      -- admin que ejecutó
+  target_id  TEXT NOT NULL,      -- usuario afectado
+  action     TEXT NOT NULL,      -- dar | quitar | fijar
+  amount     INTEGER NOT NULL,
+  before_bal INTEGER NOT NULL,
+  after_bal  INTEGER NOT NULL,
+  created_at INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_admin_actions_actor ON admin_actions (actor_id, created_at);
+
 -- Apuestas de /cripto con ventana de tiempo real (se resuelven en diferido).
 CREATE TABLE IF NOT EXISTS crypto_pending (
   id          INTEGER PRIMARY KEY AUTOINCREMENT,

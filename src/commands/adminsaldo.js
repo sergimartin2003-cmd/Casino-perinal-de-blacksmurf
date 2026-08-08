@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, PermissionFlagsBits, MessageFlags } = require('discord.js');
-const { getUser, addBalance, setBalance } = require('../lib/economy');
+const { getUser, addBalance, setBalance, logAdminAction } = require('../lib/economy');
 const { isStaff } = require('../lib/owner');
 const { recordSale } = require('../lib/dailyReport');
 const { base } = require('../lib/embeds');
@@ -65,6 +65,9 @@ module.exports = {
       after = setBalance(target.id, cantidad);
       verb = `🎯 Saldo fijado a **${fmt(cantidad)}** ${config.currency.symbol}`;
     }
+
+    // Auditoría: quién ajustó a quién, cuánto y saldo antes/después.
+    logAdminAction(interaction.user.id, target.id, accion, cantidad, before, after);
 
     const embed = base(config.colors.gold)
       .setTitle('👑 Ajuste de saldo')

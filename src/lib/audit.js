@@ -15,6 +15,9 @@ const topPairsStmt = db.prepare(
 const topWinnersStmt = db.prepare(
   'SELECT user_id, SUM(net) ganado, COUNT(*) partidas FROM bets WHERE created_at > ? GROUP BY user_id HAVING ganado > 0 ORDER BY ganado DESC LIMIT ?'
 );
+const recentAdminStmt = db.prepare(
+  'SELECT actor_id, target_id, action, amount, before_bal, after_bal, created_at FROM admin_actions ORDER BY id DESC LIMIT ?'
+);
 
 /** Ficha de auditoría de un usuario: resumen de apuestas + transferencias. */
 function userAudit(userId) {
@@ -36,4 +39,9 @@ function topWinners(sinceMs, limit = 10) {
   return topWinnersStmt.all(sinceMs, limit);
 }
 
-module.exports = { userAudit, suspiciousTransfers, topWinners };
+/** Últimas acciones de admin sobre saldos (/admin-saldo). */
+function recentAdminActions(limit = 15) {
+  return recentAdminStmt.all(limit);
+}
+
+module.exports = { userAudit, suspiciousTransfers, topWinners, recentAdminActions };

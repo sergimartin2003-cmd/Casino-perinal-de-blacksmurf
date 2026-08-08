@@ -107,6 +107,16 @@ function logTransfer(fromId, toId, amount) {
   insertTransferStmt.run(fromId, toId, Math.round(amount), Date.now());
 }
 
+const insertAdminActionStmt = db.prepare(`
+  INSERT INTO admin_actions (actor_id, target_id, action, amount, before_bal, after_bal, created_at)
+  VALUES (?, ?, ?, ?, ?, ?, ?)
+`);
+
+/** Registra una acción de admin sobre el saldo de un usuario (auditoría). */
+function logAdminAction(actorId, targetId, action, amount, before, after) {
+  insertAdminActionStmt.run(actorId, targetId, action, Math.round(amount), Math.round(before), Math.round(after), Date.now());
+}
+
 const topStmt = db.prepare(
   'SELECT id, balance, bank FROM users ORDER BY (balance + bank) DESC LIMIT ?'
 );
@@ -207,5 +217,6 @@ module.exports = {
   addInvite,
   getInviteCount,
   logTransfer,
+  logAdminAction,
   gameEvents,
 };

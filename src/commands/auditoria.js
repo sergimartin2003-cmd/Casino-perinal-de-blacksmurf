@@ -26,6 +26,9 @@ module.exports = {
     )
     .addSubcommand((s) =>
       s.setName('ganadores').setDescription('Quién más ha ganado en las últimas 24 h (posibles exploits).')
+    )
+    .addSubcommand((s) =>
+      s.setName('admin').setDescription('Últimas acciones de admin sobre saldos (/admin-saldo).')
     ),
 
   async execute(interaction) {
@@ -73,17 +76,31 @@ module.exports = {
       return interaction.reply({ embeds: [embed], allowedMentions: { parse: [] }, flags: MessageFlags.Ephemeral });
     }
 
-    // sub === 'ganadores'
-    const since = Date.now() - 24 * 60 * 60 * 1000;
-    const rows = audit.topWinners(since, 10);
-    const list = rows.length
-      ? rows
-          .map((r, i) => `**${i + 1}.** <@${r.user_id}> · **+${fmt(r.ganado)}** ${sym} · ${fmt(r.partidas)} partidas`)
+    if (sub === 'ganadores') {
+      const since = Date.now() - 24 * 60 * 60 * 1000;
+      const rows = audit.topWinners(since, 10);
+      const list = rows.length
+        ? rows
+            .map((r, i) => `**${i + 1}.** <@${r.user_id}> · **+${fmt(r.ganado)}** ${sym} · ${fmt(r.partidas)} partidas`)
+            .join('\n')
+        : '_Nadie va ganador en las últimas 24 h._';
+      const embed = base(config.colors.gold)
+        .setTitle('📈 Top ganadores (24 h)')
+        .setDescription('Mayores ganancias netas del día. Ganancias muy grandes o con pocas partidas pueden indicar un **exploit**.\n\n' + list);
+      return interaction.reply({ embeds: [embed], allowedMentions: { parse: [] }, flags: MessageFlags.Ephemeral });
+    }
+
+    // sub === 'admin'
+    const acts = audit.recentAdminActions(15);
+    const ICON = { dar: '➕', quitar: '➖', fijar: '🎯' };
+    const list = acts.length
+      ? acts
+          .map((r) => `${ICON[r.action] || '•'} <@${r.actor_id}> → <@${r.target_id}> · **${fmt(r.amount)}** ${sym} (${fmt(r.before_bal)}→${fmt(r.after_bal)}) · ${rel(r.created_at)}`)
           .join('\n')
-      : '_Nadie va ganador en las últimas 24 h._';
-    const embed = base(config.colors.gold)
-      .setTitle('📈 Top ganadores (24 h)')
-      .setDescription('Mayores ganancias netas del día. Ganancias muy grandes o con pocas partidas pueden indicar un **exploit**.\n\n' + list);
+      : '_Sin acciones de admin registradas._';
+    const embed = base(config.colors.red)
+      .setTitle('👑 Acciones de admin sobre saldos')
+      .setDescription('Últimos ajustes con `/admin-saldo` (quién, a quién y cuánto). Vigila que ningún admin se dé monedas a sí mismo.\n\n' + list);
     return interaction.reply({ embeds: [embed], allowedMentions: { parse: [] }, flags: MessageFlags.Ephemeral });
   },
 };
