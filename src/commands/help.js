@@ -37,7 +37,6 @@ module.exports = {
             '`/cripto` — 📈 predice si sube o baja una cripto en un tiempo real (30s a 1h)',
             '`/coinflip` — 🪙 cara o cruz, doble o nada',
             '`/loteria` — 🎟️ compra boletos para el bote común y gana el sorteo',
-            '🎯 **Apuestas deportivas:** pulsa los botones del tablero en el canal de apuestas (los abren los admins)',
           ].join('\n'),
         },
         {

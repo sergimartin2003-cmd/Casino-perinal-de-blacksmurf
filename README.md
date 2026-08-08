@@ -25,10 +25,6 @@ Bot de casino para Discord con **economía de moneda ficticia** (💎 **Nova**).
 - `/cripto` 📈 — predice si una cripto **subirá o bajará en una ventana de tiempo real** (30s, 1m, 5m, 15m, 30m o 1h). Se compara el precio real de CoinGecko al abrir y al cerrar; el resultado se publica en el canal cuando vence la ventana (aunque el bot se reinicie, la apuesta se resuelve igual)
 - `/coinflip` 🪙 — cara o cruz, doble o nada
 - `/loteria` 🎟️ — compra boletos para un **bote común**; sorteo programado con ganador **ponderado por boletos** (la casa se queda un %). Subcomandos: `comprar`, `bote` y `sortear` (admin/owner)
-- 🎯 **Apuestas deportivas** de cuotas fijas. Los clientes apuestan **a golpe de clic** en el tablero de botones del mercado (no hay comando de apuesta). Los mercados los abren los owners con `/mercado` (comando solo visible para admins) y se publican en el canal de apuestas (`config.betChannel`) o en el canal que se indique con la opción `canal`. Dos formas de crear mercados:
-  - `/mercado crear` — mercado manual para cualquier evento (ej: *Madrid 2.1, Empate 3.3, Barça 3.4*); el owner lo resuelve con `/mercado resolver`.
-  - `/mercado partido` — mercado de un **evento real** que se **resuelve solo** leyendo el resultado de ESPN (gratis, sin API key). Elige liga/deporte con **autocompletado** (27+): ⚽ fútbol a **1X2** (LaLiga, Premier, Champions, Europa, Serie A, Bundesliga, Ligue 1, MLS, Championship, Portugal, Eredivisie, Brasileirão, Argentina, Liga MX, Libertadores…) y a **2 opciones** el resto: 🏀 NBA/WNBA/Euroliga/NCAA, 🏈 NFL/NCAA, ⚾ MLB, 🏒 NHL, 🥊 UFC/PFL/Bellator (por combate) y 🎾 tenis ATP/WTA (por partido). Cierra apuestas al empezar y reembolsa si se suspende.
-  - `/mercado cancelar` reembolsa un mercado.
 
 > En cualquier apuesta puedes escribir `all`, `half`, `1k` o `2m`.
 > Tras cada partida, el botón **🔄 Volver a jugar** repite con la misma apuesta sin reescribir el comando.

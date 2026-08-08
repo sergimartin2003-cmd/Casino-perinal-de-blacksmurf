@@ -78,10 +78,6 @@ module.exports = {
   // Deja '' para desactivar el log. El bot debe poder escribir en ese canal.
   logChannel: '1524779532127699095',
 
-  // Canal por defecto donde se publican los mercados de apuestas.
-  // Al crear un mercado se puede indicar otro canal con la opción `canal`.
-  betChannel: '1526682410773909535',
-
   // Lotería: se compran boletos para un bote común y hay un sorteo programado.
   lottery: {
     ticketPrice: 10, // coste de cada boleto

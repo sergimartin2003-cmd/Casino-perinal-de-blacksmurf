@@ -153,49 +153,15 @@ CREATE TABLE IF NOT EXISTS lottery_tickets (
   tickets INTEGER NOT NULL DEFAULT 0,
   PRIMARY KEY (round, user_id)
 );
-
--- Apuestas deportivas: mercados que abren los owners (cuotas fijas).
-CREATE TABLE IF NOT EXISTS markets (
-  id          INTEGER PRIMARY KEY AUTOINCREMENT,
-  title       TEXT NOT NULL,
-  options     TEXT NOT NULL,           -- JSON: [{ name, odds }]
-  status      TEXT NOT NULL DEFAULT 'open', -- open | closed | resolved | void
-  channel_id  TEXT,
-  message_id  TEXT,                    -- mensaje-tablero con los botones
-  league      TEXT,                    -- liga ESPN (si es partido real)
-  event_id    TEXT,                    -- id del partido en ESPN (auto-resolución)
-  event_date  INTEGER,                 -- hora del partido (epoch ms)
-  created_by  TEXT NOT NULL,
-  created_at  INTEGER NOT NULL,
-  winner      INTEGER,                 -- índice de la opción ganadora al resolver
-  resolved_at INTEGER
-);
-
-CREATE TABLE IF NOT EXISTS market_bets (
-  id         INTEGER PRIMARY KEY AUTOINCREMENT,
-  market_id  INTEGER NOT NULL,
-  user_id    TEXT NOT NULL,
-  option_idx INTEGER NOT NULL,
-  stake      INTEGER NOT NULL,
-  odds       REAL NOT NULL,            -- cuota bloqueada al apostar
-  created_at INTEGER NOT NULL
-);
-
-CREATE INDEX IF NOT EXISTS idx_market_bets_market ON market_bets (market_id);
 `);
 
 // Migraciones suaves para bases de datos ya creadas (añaden columnas nuevas).
-for (const col of ['message_id TEXT', 'league TEXT', 'event_id TEXT', 'event_date INTEGER']) {
-  try {
-    db.exec(`ALTER TABLE markets ADD COLUMN ${col}`);
-  } catch {
-    /* la columna ya existe */
-  }
-}
 try {
   db.exec('ALTER TABLE daily_stats ADD COLUMN sold INTEGER NOT NULL DEFAULT 0');
 } catch {
   /* la columna ya existe */
 }
+// Elimina las tablas de apuestas deportivas en bases de datos antiguas.
+db.exec('DROP TABLE IF EXISTS market_bets; DROP TABLE IF EXISTS markets;');
 
 module.exports = db;
