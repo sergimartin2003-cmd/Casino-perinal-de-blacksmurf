@@ -1,6 +1,7 @@
 const { SlashCommandBuilder, MessageFlags } = require('discord.js');
 const { getUser, placeBet } = require('../lib/economy');
 const { resolveBet } = require('../lib/bet');
+const antifraud = require('../lib/antifraud');
 const { base } = require('../lib/embeds');
 const { coins, fmt } = require('../lib/format');
 const { COINS, fetchPrice, fmtPrice, addPending } = require('../lib/cryptoRounds');
@@ -68,6 +69,9 @@ module.exports = {
     const r = resolveBet(interaction.options.getString('apuesta'), u.balance);
     if (r.error) return interaction.reply({ content: `❌ ${r.error}`, flags: MessageFlags.Ephemeral });
     const wager = r.amount;
+
+    const guard = antifraud.check(interaction, wager);
+    if (!guard.ok) return interaction.reply({ content: `❌ ${guard.error}`, flags: MessageFlags.Ephemeral });
 
     await interaction.deferReply();
 

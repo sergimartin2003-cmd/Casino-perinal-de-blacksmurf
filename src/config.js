@@ -29,6 +29,15 @@ module.exports = {
     maxBet: 250000,
   },
 
+  // Anti-fraude: límites por usuario (ventana móvil de 1 hora). Los owners y
+  // administradores están EXENTOS de todos estos límites.
+  antifraud: {
+    maxBetsPerHour: 100,       // máximo de apuestas por hora
+    maxWonPerHour: 10000,      // máximo de monedas ganadas por hora (anti-explotación)
+    newAccountMaxAgeHours: 24, // una cuenta de Discord con menos de esto es "nueva"
+    newAccountMaxBet: 500,     // apuesta máxima para cuentas nuevas
+  },
+
   // Jackpot progresivo de /slots: un bote común que crece con las tiradas de
   // TODA la gente y lo revienta quien saque 💎💎💎 en la línea central.
   jackpot: {

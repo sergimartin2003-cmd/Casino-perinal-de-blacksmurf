@@ -1,5 +1,6 @@
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags } = require('discord.js');
 const { getUser } = require('./economy');
+const antifraud = require('./antifraud');
 const { fmt } = require('./format');
 const config = require('../config');
 
@@ -37,6 +38,10 @@ function waitReplay(response, interaction, wager) {
           })
           .catch(() => {});
       }
+      const guard = antifraud.check(interaction, wager);
+      if (!guard.ok) {
+        return i.reply({ content: `❌ ${guard.error}`, flags: MessageFlags.Ephemeral }).catch(() => {});
+      }
       await i.deferUpdate().catch(() => {});
       collector.stop('again');
       resolve(true);
@@ -56,6 +61,10 @@ function waitReplay(response, interaction, wager) {
  */
 async function runGameLoop(interaction, wager, round) {
   await interaction.deferReply();
+  const guard = antifraud.check(interaction, wager);
+  if (!guard.ok) {
+    return interaction.editReply({ content: `❌ ${guard.error}` }).catch(() => {});
+  }
   const response = await interaction.fetchReply();
   do {
     await round(response);

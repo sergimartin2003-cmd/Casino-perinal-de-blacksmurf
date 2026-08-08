@@ -8,6 +8,7 @@ const {
   MessageFlags,
 } = require('discord.js');
 const { getUser, placeBet, payout, recordResult } = require('../lib/economy');
+const antifraud = require('../lib/antifraud');
 const { base } = require('../lib/embeds');
 const { coins, fmt } = require('../lib/format');
 const config = require('../config');
@@ -247,6 +248,16 @@ module.exports = {
     // ---- Giro + resolución de todas las apuestas. Resuelve 'repeat' | 'new' | 'stop' ----
     const spin = async () => {
       const staked = total();
+      const guard = antifraud.check(interaction, staked);
+      if (!guard.ok) {
+        await interaction
+          .editReply({
+            embeds: [base(config.colors.red).setTitle('🎡 Ruleta').setDescription(`❌ ${guard.error}`)],
+            components: [],
+          })
+          .catch(() => {});
+        return 'stop';
+      }
       if (!placeBet(userId, staked)) {
         await interaction
           .editReply({

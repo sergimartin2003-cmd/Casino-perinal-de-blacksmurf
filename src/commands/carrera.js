@@ -9,6 +9,7 @@ const {
 } = require('discord.js');
 const { getUser, placeBet, payout, recordResult } = require('../lib/economy');
 const { resolveBet } = require('../lib/bet');
+const antifraud = require('../lib/antifraud');
 const { base } = require('../lib/embeds');
 const { coins, fmt } = require('../lib/format');
 const config = require('../config');
@@ -86,6 +87,17 @@ module.exports = {
         await interaction
           .editReply({
             embeds: [base(config.colors.red).setTitle('🏇 Carreras').setDescription(`Necesitas ${coins(wager)} y no te llega.`)],
+            components: [],
+          })
+          .catch(() => {});
+        return false;
+      }
+
+      const guard = antifraud.check(interaction, wager);
+      if (!guard.ok) {
+        await interaction
+          .editReply({
+            embeds: [base(config.colors.red).setTitle('🏇 Carreras').setDescription(`❌ ${guard.error}`)],
             components: [],
           })
           .catch(() => {});

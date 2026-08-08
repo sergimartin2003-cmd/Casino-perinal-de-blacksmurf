@@ -115,6 +115,15 @@ Ingresos estimados (ventas): 2,500 €
 
 Comando `/reporte` (solo owners): previsualiza el reporte de hoy en cualquier momento sin esperar a la hora programada.
 
+### 🛡️ Anti-fraude (`config.antifraud`)
+Límites por usuario en una ventana móvil de **1 hora** para frenar abusos y explotación. Los **owners y administradores están exentos** de todos ellos.
+
+- `maxBetsPerHour` — máximo de apuestas por hora (por defecto **100**).
+- `maxWonPerHour` — máximo de monedas ganadas por hora (por defecto **10.000**); al superarlo, se bloquean nuevas apuestas hasta que pase la hora.
+- `newAccountMaxAgeHours` / `newAccountMaxBet` — una cuenta de Discord con menos de esa antigüedad (por defecto **24 h**) solo puede apostar hasta ese máximo (por defecto **500**), para frenar el abuso con cuentas recién creadas.
+
+Cubre todos los juegos (incluido «volver a jugar»). Los contadores se llevan en memoria, así que se reinician si se reinicia el bot.
+
 ## 🗂️ Estructura
 ```
 casino-bot/
