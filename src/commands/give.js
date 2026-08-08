@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, MessageFlags } = require('discord.js');
-const { getUser, addBalance, setBalance } = require('../lib/economy');
+const { getUser, addBalance, setBalance, logTransfer } = require('../lib/economy');
 const { base } = require('../lib/embeds');
 const { coins } = require('../lib/format');
 const { resolveBet } = require('../lib/bet');
@@ -30,6 +30,7 @@ module.exports = {
 
     setBalance(interaction.user.id, sender.balance - r.amount);
     addBalance(target.id, r.amount);
+    logTransfer(interaction.user.id, target.id, r.amount); // auditoría de transferencias
 
     const embed = base(config.colors.green)
       .setTitle('💸 Transferencia realizada')

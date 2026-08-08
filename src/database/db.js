@@ -75,6 +75,32 @@ CREATE TABLE IF NOT EXISTS daily_report_state (
   next_report INTEGER NOT NULL
 );
 
+-- Auditoría: TODA apuesta liquidada (un registro por partida de cada juego).
+CREATE TABLE IF NOT EXISTS bets (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id       TEXT NOT NULL,
+  game          TEXT,
+  wagered       INTEGER NOT NULL,   -- monedas apostadas
+  net           INTEGER NOT NULL,   -- resultado neto (>0 gana, <0 pierde)
+  balance_after INTEGER NOT NULL,   -- saldo del usuario tras la partida
+  created_at    INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_bets_user ON bets (user_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_bets_created ON bets (created_at);
+
+-- Auditoría: TODA transferencia de monedas entre usuarios (/give).
+CREATE TABLE IF NOT EXISTS transfers (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  from_id    TEXT NOT NULL,
+  to_id      TEXT NOT NULL,
+  amount     INTEGER NOT NULL,
+  created_at INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_transfers_from ON transfers (from_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_transfers_to ON transfers (to_id, created_at);
+
 -- Apuestas de /cripto con ventana de tiempo real (se resuelven en diferido).
 CREATE TABLE IF NOT EXISTS crypto_pending (
   id          INTEGER PRIMARY KEY AUTOINCREMENT,

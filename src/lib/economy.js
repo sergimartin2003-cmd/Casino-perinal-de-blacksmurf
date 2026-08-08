@@ -72,14 +72,39 @@ function recordResult(id, { wagered, net, game, silent }) {
     lost: net < 0 ? Math.round(-net) : 0,
     bigwin: net > 0 ? Math.round(net) : 0,
   });
+  // Auditoría: se registra TODA apuesta (también las 'silent', p. ej. lotería).
+  const balanceAfter = getUser(id).balance;
+  insertBetStmt.run({
+    id,
+    game: game ?? null,
+    wagered: Math.round(wagered),
+    net: Math.round(net),
+    balance_after: balanceAfter,
+    created_at: Date.now(),
+  });
   if (silent) return; // p. ej. la lotería registra stats pero anuncia aparte
   gameEvents.emit('result', {
     userId: id,
     game: game ?? null,
     wagered: Math.round(wagered),
     net: Math.round(net),
-    balance: getUser(id).balance,
+    balance: balanceAfter,
   });
+}
+
+// --- Auditoría de apuestas y transferencias ---
+const insertBetStmt = db.prepare(`
+  INSERT INTO bets (user_id, game, wagered, net, balance_after, created_at)
+  VALUES (@id, @game, @wagered, @net, @balance_after, @created_at)
+`);
+const insertTransferStmt = db.prepare(`
+  INSERT INTO transfers (from_id, to_id, amount, created_at)
+  VALUES (?, ?, ?, ?)
+`);
+
+/** Registra una transferencia de monedas entre usuarios (auditoría). */
+function logTransfer(fromId, toId, amount) {
+  insertTransferStmt.run(fromId, toId, Math.round(amount), Date.now());
 }
 
 const topStmt = db.prepare(
@@ -181,5 +206,6 @@ module.exports = {
   getJackpotWinsCount,
   addInvite,
   getInviteCount,
+  logTransfer,
   gameEvents,
 };
