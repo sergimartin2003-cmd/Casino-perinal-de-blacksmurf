@@ -38,7 +38,7 @@ module.exports = {
     // Canal fijo donde se muestra el bote EN VIVO (un mensaje que se
     // autoedita). Deja '' para desactivarlo. Rellena con el ID de un canal
     // (activa Modo desarrollador en Discord → clic derecho en el canal → Copiar ID).
-    displayChannel: '',
+    displayChannel: '1535475835710996571',
     boardRefreshMs: 60 * 1000, // cada cuánto se refresca el mensaje del bote
 
     // Anti cuentas falsas: para COBRAR el bote hay que cumplir al menos UNA
