@@ -6,14 +6,14 @@ class SportsBetting {
     }
 
     getUserBalance(userId) {
-        const stmt = this.db.prepare('SELECT coins FROM users WHERE id = ?');
+        const stmt = this.db.prepare('SELECT balance FROM users WHERE id = ?');
         const result = stmt.get(userId);
-        return result ? result.coins : 0;
+        return result ? result.balance : 0;
     }
 
     updateUserBalance(userId, amount) {
         const stmt = this.db.prepare(`
-            UPDATE users SET coins = coins + ? WHERE id = ?
+            UPDATE users SET balance = MAX(0, balance + ?) WHERE id = ?
         `);
         stmt.run(amount, userId);
     }

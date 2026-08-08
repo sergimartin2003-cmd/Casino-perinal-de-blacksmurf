@@ -3,11 +3,24 @@ const fs = require('fs');
 const path = require('path');
 const { REST, Routes } = require('discord.js');
 
+function collectCommandFiles(dir) {
+  if (!fs.existsSync(dir)) return [];
+  const out = [];
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) out.push(...collectCommandFiles(full));
+    else if (entry.name.endsWith('.js')) out.push(full);
+  }
+  return out;
+}
+
 const commands = [];
-const commandsPath = path.join(__dirname, 'commands');
-for (const file of fs.readdirSync(commandsPath).filter((f) => f.endsWith('.js'))) {
-  const command = require(path.join(commandsPath, file));
-  if (command.data) commands.push(command.data.toJSON());
+const commandDirs = [path.join(__dirname, 'commands'), path.join(__dirname, '..', 'commands')];
+for (const dir of commandDirs) {
+  for (const file of collectCommandFiles(dir)) {
+    const command = require(file);
+    if (command.data) commands.push(command.data.toJSON());
+  }
 }
 
 const { DISCORD_TOKEN, CLIENT_ID, GUILD_ID } = process.env;

@@ -1,4 +1,5 @@
-const fetch = require('node-fetch');
+// fetch nativo de Node 18+ (sin dependencia externa).
+const fetch = globalThis.fetch;
 
 class OddsApi {
     constructor(apiKey) {

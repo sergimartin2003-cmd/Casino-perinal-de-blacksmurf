@@ -161,7 +161,13 @@ try {
 } catch {
   /* la columna ya existe */
 }
-// Elimina las tablas de apuestas deportivas en bases de datos antiguas.
+// Elimina las tablas del viejo sistema de mercados en bases de datos antiguas.
 db.exec('DROP TABLE IF EXISTS market_bets; DROP TABLE IF EXISTS markets;');
+
+// Aplica la migración de apuestas deportivas (crea sports_events/odds/bets).
+const sportsMigration = path.join(__dirname, '..', '..', 'migrations', 'sports_tables.sql');
+if (fs.existsSync(sportsMigration)) {
+  db.exec(fs.readFileSync(sportsMigration, 'utf8'));
+}
 
 module.exports = db;

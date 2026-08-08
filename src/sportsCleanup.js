@@ -38,9 +38,9 @@ class SportsCleanup {
         const deleteStmt = this.db.prepare(`
             DELETE FROM sports_events
             WHERE status = 'finished'
-            AND datetime(start_time) < datetime('now', '-? days')
+            AND datetime(start_time) < datetime('now', ?)
         `);
-        const deleted = deleteStmt.run(daysToKeep + 3);
+        const deleted = deleteStmt.run(`-${daysToKeep + 3} days`);
 
         const cleanupOdds = this.db.prepare(`
             DELETE FROM sports_odds
@@ -57,9 +57,9 @@ class SportsCleanup {
     }
 
     scheduleCleanup(intervalHours = 6) {
-        this.cleanupOldEvents();
+        this.cleanupOldEvents().catch((e) => console.error(`[Cleanup] Error: ${e.message}`));
         setInterval(() => {
-            this.cleanupOldEvents();
+            this.cleanupOldEvents().catch((e) => console.error(`[Cleanup] Error: ${e.message}`));
         }, intervalHours * 60 * 60 * 1000);
         console.log(`[Cleanup] Programado cada ${intervalHours} horas`);
     }

@@ -137,16 +137,16 @@ class SportsCache {
             UPDATE sports_events
             SET status = 'finished'
             WHERE status != 'finished'
-            AND datetime(start_time) < datetime('now', '-? days')
+            AND datetime(start_time) < datetime('now', ?)
         `);
-        stmt.run(daysToKeep);
+        stmt.run(`-${daysToKeep} days`);
 
         const deleteStmt = this.db.prepare(`
             DELETE FROM sports_events
             WHERE status = 'finished'
-            AND datetime(start_time) < datetime('now', '-? days')
+            AND datetime(start_time) < datetime('now', ?)
         `);
-        deleteStmt.run(daysToKeep + 3);
+        deleteStmt.run(`-${daysToKeep + 3} days`);
     }
 
     getStats() {

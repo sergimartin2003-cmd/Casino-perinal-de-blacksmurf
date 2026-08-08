@@ -14,7 +14,11 @@ const invites = require('./lib/invites');
 const dailyReport = require('./lib/dailyReport');
 const antifraud = require('./lib/antifraud');
 const backup = require('./lib/backup');
+const SportsUpdater = require('./sportsUpdater');
+const SportsCleanup = require('./sportsCleanup');
 const { isStaff } = require('./lib/owner');
+
+const ODDS_API_KEY = process.env.ODDS_API_KEY;
 
 // Intents mínimos por defecto (sin privilegiados). El seguimiento de
 // invitaciones del jackpot exige GuildMembers (privilegiado) + GuildInvites;
@@ -27,14 +31,28 @@ if (config.jackpot.trackInvites) {
 const client = new Client({ intents });
 client.commands = new Collection();
 
-// Carga dinámica de todos los comandos de /commands
-const commandsPath = path.join(__dirname, 'commands');
-for (const file of fs.readdirSync(commandsPath).filter((f) => f.endsWith('.js'))) {
-  const command = require(path.join(commandsPath, file));
-  if (command.data && command.execute) {
-    client.commands.set(command.data.name, command);
-  } else {
-    console.warn(`⚠️  El comando ${file} no exporta { data, execute }.`);
+// Recopila archivos .js de comandos de forma recursiva (para subcarpetas como commands/sports/).
+function collectCommandFiles(dir) {
+  if (!fs.existsSync(dir)) return [];
+  const out = [];
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) out.push(...collectCommandFiles(full));
+    else if (entry.name.endsWith('.js')) out.push(full);
+  }
+  return out;
+}
+
+// Carga dinámica de comandos: src/commands/ (casino) y commands/ (apuestas deportivas), recursivo.
+const commandDirs = [path.join(__dirname, 'commands'), path.join(__dirname, '..', 'commands')];
+for (const dir of commandDirs) {
+  for (const file of collectCommandFiles(dir)) {
+    const command = require(file);
+    if (command.data && command.execute) {
+      client.commands.set(command.data.name, command);
+    } else {
+      console.warn(`⚠️  El comando ${file} no exporta { data, execute }.`);
+    }
   }
 }
 
@@ -60,6 +78,18 @@ client.once(Events.ClientReady, (c) => {
   dailyReport.startScheduler(c); // publica el reporte diario en el canal configurado
   antifraud.attach(); // registra apuestas/ganancias por hora para los límites anti-fraude
   backup.startScheduler(c); // copias de seguridad automáticas de la base de datos
+
+  // Sistema de apuestas deportivas (solo si hay clave de la Odds API).
+  if (ODDS_API_KEY) {
+    console.log('📊 Inicializando sistema de apuestas deportivas…');
+    const updater = new SportsUpdater(ODDS_API_KEY, './data/casino.db');
+    updater.scheduleUpdates(15); // actualiza eventos/cuotas/resultados cada 15 min
+    const sportsCleanup = new SportsCleanup('./data/casino.db', null);
+    sportsCleanup.scheduleCleanup(6); // limpia eventos antiguos cada 6 h
+    console.log('✅ Sistema de apuestas deportivas inicializado.');
+  } else {
+    console.log('⚠️  ODDS_API_KEY no configurada. Apuestas deportivas desactivadas.');
+  }
 });
 
 client.on(Events.InteractionCreate, async (interaction) => {

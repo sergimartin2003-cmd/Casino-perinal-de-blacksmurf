@@ -168,9 +168,9 @@ class SportsUpdater {
     }
 
     scheduleUpdates(intervalMinutes = 15) {
-        this.fullUpdate();
+        this.fullUpdate().catch((e) => console.error(`[Updater] Error: ${e.message}`));
         setInterval(() => {
-            this.fullUpdate();
+            this.fullUpdate().catch((e) => console.error(`[Updater] Error: ${e.message}`));
         }, intervalMinutes * 60 * 1000);
         console.log(`[Updater] Programado cada ${intervalMinutes} minutos`);
     }
