@@ -245,6 +245,17 @@ client.on(Events.InteractionCreate, async (interaction) => {
       .catch(() => {});
   }
 
+  // Rol obligatorio POR JUEGO (además del global), salvo admins/owners.
+  const gameRole = config.gameRoles?.[interaction.commandName];
+  if (gameRole && !isStaff && !memberHasRole(interaction.member, gameRole)) {
+    return interaction
+      .reply({
+        content: `❌ Para **/${interaction.commandName}** necesitas el rol <@&${gameRole}>.`,
+        flags: MessageFlags.Ephemeral,
+      })
+      .catch(() => {});
+  }
+
   try {
     await command.execute(interaction);
   } catch (err) {

@@ -73,7 +73,10 @@ El permiso incluye *Enviar mensajes* y *Usar comandos de aplicación*.
 
 ## ⚙️ Personalización
 
-> 💡 **Desde Discord:** el comando **`/config`** (solo owners) permite cambiar la mayoría de estos ajustes **sin editar archivos ni reiniciar** — canales, jackpot, reporte diario, anti-fraude y backups. Los cambios se guardan en la base de datos (tabla `settings`) y se aplican al momento. `/config ver` muestra la configuración actual. Los valores de `config.js` son los **valores por defecto** si no se ha cambiado nada por `/config`.
+> 💡 **Desde Discord:** el comando **`/config`** (solo owners) permite cambiar la mayoría de estos ajustes **sin editar archivos ni reiniciar** — canales, jackpot, reporte diario, anti-fraude, backups y el **canal + rol de cada juego**. Los cambios se guardan en la base de datos (tabla `settings`) y se aplican al momento. `/config ver` muestra la configuración actual. Los valores de `config.js` son los **valores por defecto** si no se ha cambiado nada por `/config`.
+>
+> - `/config juego <juego> canal:#canal` — fija dónde se juega ese juego. `abrir_a_todos:true` lo permite en cualquier canal.
+> - `/config juego <juego> rol:@rol` — exige ese rol **solo para ese juego** (además del rol global). `quitar_rol:true` lo elimina.
 
 Casi todo se ajusta en [`src/config.js`](src/config.js):
 - **Nombre y símbolo de la moneda** (`currency`)

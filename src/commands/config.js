@@ -9,6 +9,11 @@ const chan = (id) => (id ? `<#${id}>` : '_sin configurar_');
 const role = (id) => (id ? `<@&${id}>` : '_ninguno_');
 const onoff = (b) => (b ? '✅ activado' : '❌ desactivado');
 
+// Juegos con canal/rol configurable (nombres = nombre del comando).
+const GAMES = ['slots', 'ruleta', 'blackjack', 'poker', 'mines', 'hilo', 'dados', 'carrera', 'cripto', 'coinflip', 'loteria'];
+const showChannels = (v) =>
+  Array.isArray(v) ? v.filter(Boolean).map((id) => `<#${id}>`).join(' o ') || 'cualquiera' : v ? `<#${v}>` : 'cualquiera';
+
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('config')
@@ -59,6 +64,22 @@ module.exports = {
         .addBooleanOption((o) => o.setName('activado').setDescription('Activar/desactivar (aplica al reiniciar)'))
         .addIntegerOption((o) => o.setName('intervalo_horas').setDescription('Cada cuántas horas (aplica al reiniciar)').setMinValue(1))
         .addIntegerOption((o) => o.setName('conservar').setDescription('Cuántas copias locales guardar').setMinValue(1))
+    )
+    .addSubcommand((s) =>
+      s
+        .setName('juego')
+        .setDescription('Canal y rol de un juego concreto.')
+        .addStringOption((o) =>
+          o
+            .setName('juego')
+            .setDescription('¿Qué juego?')
+            .setRequired(true)
+            .addChoices(...GAMES.map((g) => ({ name: g, value: g })))
+        )
+        .addChannelOption((o) => o.setName('canal').setDescription('Canal donde se podrá jugar').addChannelTypes(ChannelType.GuildText))
+        .addBooleanOption((o) => o.setName('abrir_a_todos').setDescription('Permitir en CUALQUIER canal (quita la restricción)'))
+        .addRoleOption((o) => o.setName('rol').setDescription('Rol necesario para jugarlo (además del rol global)'))
+        .addBooleanOption((o) => o.setName('quitar_rol').setDescription('Quitar el rol específico de este juego'))
     ),
 
   async execute(interaction) {
@@ -103,6 +124,12 @@ module.exports = {
           {
             name: '🗄️ Backup',
             value: `${onoff(b.enabled)} · cada **${b.intervalHours}h** · conserva **${b.keep}** copias`,
+          },
+          {
+            name: `🎮 Juegos (canal · rol) — rol global: ${role(config.requiredRole)}`,
+            value: GAMES.map(
+              (g) => `\`${g.padEnd(9)}\` ${showChannels(config.channels?.[g])}` + (config.gameRoles?.[g] ? ` · <@&${config.gameRoles[g]}>` : '')
+            ).join('\n'),
           }
         )
         .setFooter({ text: 'Cambia con /config <sección>. Se guarda en la base de datos.' });
@@ -154,6 +181,18 @@ module.exports = {
       if (act !== null) { settings.set('backup.enabled', act); changes.push(`backup → ${act ? 'activado' : 'desactivado'} (reinicia)`); }
       if (iv !== null) { settings.set('backup.intervalHours', iv); changes.push(`intervalo → ${iv}h (reinicia)`); }
       if (keep !== null) { settings.set('backup.keep', keep); changes.push(`conservar → ${keep}`); }
+    } else if (sub === 'juego') {
+      const game = interaction.options.getString('juego');
+      const canal = interaction.options.getChannel('canal');
+      const abrir = interaction.options.getBoolean('abrir_a_todos');
+      const rol = interaction.options.getRole('rol');
+      const quitarRol = interaction.options.getBoolean('quitar_rol');
+
+      if (abrir) { settings.set(`channels.${game}`, ''); changes.push(`${game}: canal → cualquiera`); }
+      else if (canal) { settings.set(`channels.${game}`, canal.id); changes.push(`${game}: canal → <#${canal.id}>`); }
+
+      if (quitarRol) { settings.set(`gameRoles.${game}`, ''); changes.push(`${game}: rol → ninguno`); }
+      else if (rol) { settings.set(`gameRoles.${game}`, rol.id); changes.push(`${game}: rol → <@&${rol.id}>`); }
     }
 
     if (!changes.length) {

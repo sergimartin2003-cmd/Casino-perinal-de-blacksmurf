@@ -139,4 +139,9 @@ module.exports = {
     coinflip: '1524786859891363991',
     loteria: '1524786970793087016',
   },
+
+  // Rol obligatorio POR JUEGO (además del rol global `requiredRole`).
+  // Deja '' para que ese juego no pida un rol extra. Se gestiona con
+  // `/config juego <juego> rol:@rol`. Los owners/admins están exentos.
+  gameRoles: {},
 };
