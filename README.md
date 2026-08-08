@@ -72,6 +72,9 @@ https://discord.com/api/oauth2/authorize?client_id=CLIENT_ID&permissions=2147483
 El permiso incluye *Enviar mensajes* y *Usar comandos de aplicación*.
 
 ## ⚙️ Personalización
+
+> 💡 **Desde Discord:** el comando **`/config`** (solo owners) permite cambiar la mayoría de estos ajustes **sin editar archivos ni reiniciar** — canales, jackpot, reporte diario, anti-fraude y backups. Los cambios se guardan en la base de datos (tabla `settings`) y se aplican al momento. `/config ver` muestra la configuración actual. Los valores de `config.js` son los **valores por defecto** si no se ha cambiado nada por `/config`.
+
 Casi todo se ajusta en [`src/config.js`](src/config.js):
 - **Nombre y símbolo de la moneda** (`currency`)
 - **Nombre del casino** (`casino`)

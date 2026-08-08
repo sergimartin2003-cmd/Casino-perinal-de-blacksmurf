@@ -15,6 +15,8 @@ const {
 } = require('discord.js');
 
 const config = require('./config');
+// Aplica los ajustes guardados con /config SOBRE config antes de cargar nada más.
+require('./lib/settings').load();
 const { startResolver } = require('./lib/cryptoRounds');
 const gamelog = require('./lib/gamelog');
 const lottery = require('./lib/lottery');

@@ -35,7 +35,6 @@ const REEL = [
 // Multiplicador de BENEFICIO por línea de tres iguales (RTP ≈ 0.95, 3 líneas).
 const PAY = { '🍒': 3, '🍋': 4, '🍇': 5, '⭐': 7, '🔔': 9, '7️⃣': 18, '💎': 40 };
 const FULL_BONUS = 5; // pantalla completa: PAY[símbolo] × 5 extra
-const JACKPOT_RATE = config.jackpot.contribution; // % de cada apuesta que alimenta el bote común
 
 const spinReel = () => Array.from({ length: 3 }, () => REEL[Math.floor(Math.random() * REEL.length)]);
 
@@ -71,7 +70,7 @@ module.exports = {
 
     const round = async () => {
       placeBet(interaction.user.id, wager);
-      addJackpot(wager * JACKPOT_RATE);
+      addJackpot(wager * config.jackpot.contribution); // aportación en vivo (editable con /config)
 
       const cols = [spinReel(), spinReel(), spinReel()];
       const spinEmbed = (c) =>

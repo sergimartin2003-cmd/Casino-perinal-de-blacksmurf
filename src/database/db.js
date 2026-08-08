@@ -29,6 +29,12 @@ CREATE TABLE IF NOT EXISTS meta (
   value INTEGER NOT NULL
 );
 
+-- Ajustes editables desde Discord (/config). Sobrescriben los de config.js.
+CREATE TABLE IF NOT EXISTS settings (
+  key   TEXT PRIMARY KEY,   -- ruta con puntos, p. ej. "jackpot.seed"
+  value TEXT NOT NULL       -- JSON del valor
+);
+
 -- Historial de jackpots reventados en /slots (para mostrar el último ganador).
 CREATE TABLE IF NOT EXISTS jackpot_wins (
   id      INTEGER PRIMARY KEY AUTOINCREMENT,
