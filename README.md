@@ -90,6 +90,30 @@ Los pagos de cada juego están dentro de su archivo en `src/commands/`.
 - `minAccountAgeDays` / `minInvites` — **anti cuentas falsas**: para *cobrar* el bote el usuario debe cumplir al menos una: cuenta de Discord con esa antigüedad, **o** haber invitado a esa cantidad de gente. Si no cumple, alinea los 💎 pero el bote **no** se entrega ni se reinicia.
 - `trackInvites` — pon `true` para contar invitaciones (necesario para el requisito de invitados). ⚠️ Requiere activar el **intent privilegiado *Server Members*** en el [Developer Portal](https://discord.com/developers/applications) (Bot → *Privileged Gateway Intents*) y que el bot tenga permiso **Gestionar servidor**. Con `false` solo cuenta la antigüedad y el bot sigue sin intents privilegiados.
 
+### 📊 Reporte diario (`config.dailyReport`)
+Cada día, a una hora fija, el bot publica un resumen del casino en un canal. El bot va acumulando las estadísticas de cada partida mientras está encendido (si estuvo apagado a la hora del reporte, lo publica al volver).
+
+```
+📊 REPORTE DEL DÍA 08/08/2026
+─────────────────────────────
+Usuarios activos: 347
+Apuestas totales: 12,450
+Monedas apostadas: 1,234,500
+Monedas ganadas: 1,109,800
+Beneficio del servidor: 124,700 monedas (10.1%)
+Top apostador: @Juanito (45,000 monedas)
+Jackpot actual: 87,300 monedas
+VIPs activos: 23
+Ingresos estimados (ventas): $124
+```
+
+- `channel` — ID del canal donde se publica el reporte (`''` = desactivado).
+- `hour` / `minute` — hora **local del servidor** a la que se publica (el reporte cubre el día que termina en ese momento; por defecto 23:59).
+- `vipRole` — rol de Discord que cuenta como **VIP**; «VIPs activos» = usuarios que jugaron ese día y tienen ese rol. Déjalo `''` si no tienes VIPs (se mostrará 0).
+- `revenuePerVip` — este bot es de **fichas ficticias**, no tiene ventas reales, así que «Ingresos estimados (ventas)» es una estimación = `revenuePerVip` × VIPs activos. Ponlo a 0 para no estimar.
+
+Comando `/reporte` (solo owners): previsualiza el reporte de hoy en cualquier momento sin esperar a la hora programada.
+
 ## 🗂️ Estructura
 ```
 casino-bot/

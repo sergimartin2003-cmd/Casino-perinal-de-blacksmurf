@@ -82,6 +82,20 @@ module.exports = {
     channel: '', // canal donde se anuncia el sorteo (vacío = sin anuncio)
   },
 
+  // Reporte diario del casino: un resumen que se publica cada día en un canal.
+  dailyReport: {
+    channel: '',      // ID del canal donde se publica ('' = desactivado)
+    hour: 23,         // hora LOCAL del servidor a la que se publica (0-23)
+    minute: 59,       // minuto (el reporte cubre el día que termina a esa hora)
+    // "VIPs activos": usuarios activos ese día que tienen este rol de Discord.
+    // Deja '' si no tienes sistema VIP (se mostrará 0).
+    vipRole: '',
+    // "Ingresos estimados (ventas)": este bot es de fichas ficticias y no tiene
+    // ventas reales, así que es una ESTIMACIÓN = revenuePerVip ($) × VIPs activos.
+    // Ponlo a 0 si no quieres estimar ingresos.
+    revenuePerVip: 0,
+  },
+
   // Rol obligatorio para poder jugar (ID del rol de Discord).
   // Si está vacío (''), cualquiera puede jugar. Si tiene un ID, solo quien
   // tenga ese rol podrá usar los juegos. El ID del rol tampoco cambia al

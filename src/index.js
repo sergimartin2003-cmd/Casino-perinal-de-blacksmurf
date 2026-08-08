@@ -22,6 +22,7 @@ const markets = require('./lib/markets');
 const espn = require('./lib/espn');
 const jackpotBoard = require('./lib/jackpotBoard');
 const invites = require('./lib/invites');
+const dailyReport = require('./lib/dailyReport');
 const { isOwner } = require('./lib/owner');
 const { resolveBet } = require('./lib/bet');
 const { getUser } = require('./lib/economy');
@@ -181,6 +182,8 @@ client.once(Events.ClientReady, (c) => {
   jackpotBoard.start(c); // muestra el bote en vivo en el canal fijo configurado
   invites.attach(c); // rastrea invitaciones (si trackInvites está activado)
   invites.init(c); // cachea las invitaciones actuales de cada servidor
+  dailyReport.attach(); // acumula estadísticas por día de cada partida
+  dailyReport.startScheduler(c); // publica el reporte diario en el canal configurado
 });
 
 client.on(Events.InteractionCreate, async (interaction) => {

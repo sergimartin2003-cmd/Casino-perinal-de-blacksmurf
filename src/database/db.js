@@ -50,6 +50,30 @@ CREATE TABLE IF NOT EXISTS invites (
   count   INTEGER NOT NULL DEFAULT 0
 );
 
+-- Estadísticas por día (para el reporte diario del casino). 'day' = 'YYYY-MM-DD'.
+CREATE TABLE IF NOT EXISTS daily_stats (
+  day      TEXT PRIMARY KEY,
+  bets     INTEGER NOT NULL DEFAULT 0,  -- nº de apuestas (partidas) del día
+  wagered  INTEGER NOT NULL DEFAULT 0,  -- monedas apostadas
+  returned INTEGER NOT NULL DEFAULT 0,  -- monedas devueltas a jugadores (ganadas)
+  reported INTEGER NOT NULL DEFAULT 0   -- 1 si ya se publicó el reporte de ese día
+);
+
+-- Actividad por usuario y día (usuarios activos y top apostador del día).
+CREATE TABLE IF NOT EXISTS daily_active (
+  day     TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  wagered INTEGER NOT NULL DEFAULT 0,
+  bets    INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (day, user_id)
+);
+
+-- Momento del próximo reporte diario (una sola fila).
+CREATE TABLE IF NOT EXISTS daily_report_state (
+  id          INTEGER PRIMARY KEY CHECK (id = 1),
+  next_report INTEGER NOT NULL
+);
+
 -- Apuestas de /cripto con ventana de tiempo real (se resuelven en diferido).
 CREATE TABLE IF NOT EXISTS crypto_pending (
   id          INTEGER PRIMARY KEY AUTOINCREMENT,
