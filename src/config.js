@@ -84,7 +84,7 @@ module.exports = {
 
   // Reporte diario del casino: un resumen que se publica cada día en un canal.
   dailyReport: {
-    channel: '',      // ID del canal donde se publica ('' = desactivado)
+    channel: '1535485799708098721', // ID del canal donde se publica ('' = desactivado)
     hour: 23,         // hora LOCAL del servidor a la que se publica (0-23)
     minute: 59,       // minuto (el reporte cubre el día que termina a esa hora)
     // "VIPs activos": usuarios activos ese día que tienen este rol de Discord.
