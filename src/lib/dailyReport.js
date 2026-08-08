@@ -69,6 +69,12 @@ async function countActiveVips(guild, day) {
   return count;
 }
 
+/** Formatea una cantidad de monedas como euros según la tasa configurada. */
+function euros(coins) {
+  const rate = DR().coinsPerEuro || 100;
+  return (coins / rate).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+}
+
 /** Construye el texto del reporte para un día. `vips` se pasa ya calculado. */
 function buildReport(day, vips = 0) {
   const s = getStatsStmt.get(day) || { bets: 0, wagered: 0, returned: 0 };
@@ -76,7 +82,6 @@ function buildReport(day, vips = 0) {
   const top = topBettorStmt.get(day);
   const beneficio = s.wagered - s.returned;
   const pct = s.wagered > 0 ? (beneficio / s.wagered) * 100 : 0;
-  const ingresos = Math.round(vips * DR().revenuePerVip);
   const topLine = top ? `<@${top.user_id}> (${fmt(top.wagered)} monedas)` : '—';
 
   return [
@@ -90,7 +95,7 @@ function buildReport(day, vips = 0) {
     `Top apostador: ${topLine}`,
     `Jackpot actual: ${fmt(getJackpot())} monedas`,
     `VIPs activos: ${fmt(vips)}`,
-    `Ingresos estimados (ventas): $${fmt(ingresos)}`,
+    `Ingresos estimados (ventas): ${euros(beneficio)} €`,
   ].join('\n');
 }
 

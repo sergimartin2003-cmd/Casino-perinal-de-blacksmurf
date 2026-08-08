@@ -104,13 +104,13 @@ Beneficio del servidor: 124,700 monedas (10.1%)
 Top apostador: @Juanito (45,000 monedas)
 Jackpot actual: 87,300 monedas
 VIPs activos: 23
-Ingresos estimados (ventas): $124
+Ingresos estimados (ventas): 1,247 €
 ```
 
 - `channel` — ID del canal donde se publica el reporte (`''` = desactivado).
 - `hour` / `minute` — hora **local del servidor** a la que se publica (el reporte cubre el día que termina en ese momento; por defecto 23:59).
 - `vipRole` — rol de Discord que cuenta como **VIP**; «VIPs activos» = usuarios que jugaron ese día y tienen ese rol. Déjalo `''` si no tienes VIPs (se mostrará 0).
-- `revenuePerVip` — este bot es de **fichas ficticias**, no tiene ventas reales, así que «Ingresos estimados (ventas)» es una estimación = `revenuePerVip` × VIPs activos. Ponlo a 0 para no estimar.
+- `coinsPerEuro` — «Ingresos estimados (ventas)» convierte el **beneficio del servidor** del día a euros con esta tasa (cuántas monedas equivalen a 1 €). Con `100`, un beneficio de 124.700 monedas = **1.247 €**.
 
 Comando `/reporte` (solo owners): previsualiza el reporte de hoy en cualquier momento sin esperar a la hora programada.
 

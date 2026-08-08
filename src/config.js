@@ -90,10 +90,10 @@ module.exports = {
     // "VIPs activos": usuarios activos ese día que tienen este rol de Discord.
     // Deja '' si no tienes sistema VIP (se mostrará 0).
     vipRole: '',
-    // "Ingresos estimados (ventas)": este bot es de fichas ficticias y no tiene
-    // ventas reales, así que es una ESTIMACIÓN = revenuePerVip ($) × VIPs activos.
-    // Ponlo a 0 si no quieres estimar ingresos.
-    revenuePerVip: 0,
+    // "Ingresos estimados (ventas)": convierte el BENEFICIO del servidor del día
+    // a euros con esta tasa (cuántas monedas equivalen a 1 €). Con 100, un
+    // beneficio de 124.700 monedas = 1.247 €.
+    coinsPerEuro: 100,
   },
 
   // Rol obligatorio para poder jugar (ID del rol de Discord).
