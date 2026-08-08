@@ -110,7 +110,7 @@ Ingresos estimados (ventas): 1,247 €
 - `channel` — ID del canal donde se publica el reporte (`''` = desactivado).
 - `hour` / `minute` — hora **local del servidor** a la que se publica (el reporte cubre el día que termina en ese momento; por defecto 23:59).
 - `vipRole` — rol de Discord que cuenta como **VIP**; «VIPs activos» = usuarios que jugaron ese día y tienen ese rol. Déjalo `''` si no tienes VIPs (se mostrará 0).
-- `coinsPerEuro` — «Ingresos estimados (ventas)» convierte el **beneficio del servidor** del día a euros con esta tasa (cuántas monedas equivalen a 1 €). Con `100`, un beneficio de 124.700 monedas = **1.247 €**.
+- `coinsPerEuro` — cuántas monedas equivalen a **1 €** (tasa de venta). «Ingresos estimados (ventas)» = las monedas **vendidas** ese día ÷ esta tasa. Una venta es cuando un owner **da** monedas con `/admin-saldo` → *➕ Dar* (las transferencias `/give` entre usuarios **no** cuentan). Con `100`, vender 124.700 monedas = **1.247 €**. Ojo: es distinto del *beneficio del servidor*, que es lo que gana la casa en las **partidas**.
 
 Comando `/reporte` (solo owners): previsualiza el reporte de hoy en cualquier momento sin esperar a la hora programada.
 

@@ -56,6 +56,7 @@ CREATE TABLE IF NOT EXISTS daily_stats (
   bets     INTEGER NOT NULL DEFAULT 0,  -- nº de apuestas (partidas) del día
   wagered  INTEGER NOT NULL DEFAULT 0,  -- monedas apostadas
   returned INTEGER NOT NULL DEFAULT 0,  -- monedas devueltas a jugadores (ganadas)
+  sold     INTEGER NOT NULL DEFAULT 0,  -- monedas VENDIDAS ese día (/admin-saldo dar)
   reported INTEGER NOT NULL DEFAULT 0   -- 1 si ya se publicó el reporte de ese día
 );
 
@@ -144,6 +145,11 @@ for (const col of ['message_id TEXT', 'league TEXT', 'event_id TEXT', 'event_dat
   } catch {
     /* la columna ya existe */
   }
+}
+try {
+  db.exec('ALTER TABLE daily_stats ADD COLUMN sold INTEGER NOT NULL DEFAULT 0');
+} catch {
+  /* la columna ya existe */
 }
 
 module.exports = db;

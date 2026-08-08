@@ -1,6 +1,7 @@
 const { SlashCommandBuilder, PermissionFlagsBits, MessageFlags } = require('discord.js');
 const { getUser, addBalance, setBalance } = require('../lib/economy');
 const { isOwner } = require('../lib/owner');
+const { recordSale } = require('../lib/dailyReport');
 const { base } = require('../lib/embeds');
 const { coins, fmt } = require('../lib/format');
 const config = require('../config');
@@ -55,6 +56,7 @@ module.exports = {
     let verb;
     if (accion === 'dar') {
       after = addBalance(target.id, cantidad);
+      recordSale(cantidad); // dar monedas = venta (cuenta para "Ingresos" del reporte diario)
       verb = `➕ Añadido **${fmt(cantidad)}** ${config.currency.symbol}`;
     } else if (accion === 'quitar') {
       after = addBalance(target.id, -cantidad); // el saldo nunca baja de 0

@@ -44,6 +44,18 @@ function record(r) {
   upsertActiveStmt.run({ day, user_id: r.userId, wagered });
 }
 
+const upsertSaleStmt = db.prepare(`
+  INSERT INTO daily_stats (day, sold) VALUES (@day, @sold)
+  ON CONFLICT(day) DO UPDATE SET sold = sold + excluded.sold
+`);
+
+/** Registra una venta de monedas del día (owner da monedas con /admin-saldo). */
+function recordSale(amount) {
+  const sold = Math.max(0, Math.round(amount));
+  if (sold <= 0) return;
+  upsertSaleStmt.run({ day: dayKey(), sold });
+}
+
 // --- Consultas del día ---
 const getStatsStmt = db.prepare('SELECT * FROM daily_stats WHERE day = ?');
 const activeCountStmt = db.prepare('SELECT COUNT(*) AS n FROM daily_active WHERE day = ?');
@@ -77,7 +89,7 @@ function euros(coins) {
 
 /** Construye el texto del reporte para un día. `vips` se pasa ya calculado. */
 function buildReport(day, vips = 0) {
-  const s = getStatsStmt.get(day) || { bets: 0, wagered: 0, returned: 0 };
+  const s = getStatsStmt.get(day) || { bets: 0, wagered: 0, returned: 0, sold: 0 };
   const activos = activeCountStmt.get(day).n;
   const top = topBettorStmt.get(day);
   const beneficio = s.wagered - s.returned;
@@ -95,7 +107,7 @@ function buildReport(day, vips = 0) {
     `Top apostador: ${topLine}`,
     `Jackpot actual: ${fmt(getJackpot())} monedas`,
     `VIPs activos: ${fmt(vips)}`,
-    `Ingresos estimados (ventas): ${euros(beneficio)} €`,
+    `Ingresos estimados (ventas): ${euros(s.sold || 0)} €`,
   ].join('\n');
 }
 
@@ -188,4 +200,4 @@ function startScheduler(client) {
   setInterval(tick, 30000);
 }
 
-module.exports = { attach, startScheduler, postReport, generate, buildReport, record, dayKey };
+module.exports = { attach, startScheduler, postReport, generate, buildReport, record, recordSale, dayKey };
