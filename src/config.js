@@ -91,6 +91,17 @@ module.exports = {
     channel: '', // canal donde se anuncia el sorteo (vacío = sin anuncio)
   },
 
+  // Copias de seguridad automáticas de la base de datos (data/casino.db).
+  backup: {
+    enabled: true,
+    intervalHours: 6,   // cada cuántas horas se hace copia
+    dir: 'backups',     // carpeta local donde se guardan (relativa a la raíz)
+    keep: 12,           // cuántas copias locales conservar (se borran las más viejas)
+    // Off-site (opcional): sube el .db a un canal de Discord y/o a tu servidor.
+    channel: '',        // ID de canal de Discord donde subir el backup ('' = no)
+    webhookUrl: '',     // o POST del archivo a esta URL/servidor externo ('' = no)
+  },
+
   // Reporte diario del casino: un resumen que se publica cada día en un canal.
   dailyReport: {
     channel: '1535485799708098721', // ID del canal donde se publica ('' = desactivado)

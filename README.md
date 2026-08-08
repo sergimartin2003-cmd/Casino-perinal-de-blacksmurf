@@ -124,6 +124,22 @@ Límites por usuario en una ventana móvil de **1 hora** para frenar abusos y ex
 
 Cubre todos los juegos (incluido «volver a jugar»). Los contadores se llevan en memoria, así que se reinician si se reinicia el bot.
 
+### 🗄️ Copias de seguridad (`config.backup`)
+El bot hace una **copia de seguridad automática** de `data/casino.db` cada X horas usando el *backup online* de SQLite (consistente aunque el bot esté escribiendo, con WAL activo).
+
+- `enabled` — activa/desactiva las copias.
+- `intervalHours` — cada cuántas horas (por defecto **6**). Se hace una copia también al arrancar.
+- `dir` — carpeta local donde se guardan (por defecto `backups/`, ignorada por git).
+- `keep` — cuántas copias locales conservar; las más viejas se borran (rotación).
+- `channel` — ID de un canal de Discord donde **subir** el `.db` como adjunto (off-site sin montar nada; sujeto al límite de tamaño de Discord).
+- `webhookUrl` — o hace un **POST** del archivo (multipart `file`) a esa URL: tu **servidor externo**, un webhook, o un **Google Apps Script** que lo guarde en Drive.
+
+Comando `/backup` (solo owners): fuerza una copia al instante para verificar la subida sin esperar al ciclo.
+
+**¿Google Drive por API oficial?** Requiere credenciales tuyas: crea un *service account* en Google Cloud, comparte una carpeta de Drive con su email, y añade la librería `googleapis`. Dos caminos:
+1. **Sin código extra:** publica un Google Apps Script como *web app* que reciba el `POST` y escriba en Drive, y pon su URL en `webhookUrl`. Funciona con lo que ya hay.
+2. **Con la API:** con el JSON del service account y el ID de la carpeta se puede subir directamente; pídelo y se añade el uploader de Drive.
+
 ## 🗂️ Estructura
 ```
 casino-bot/

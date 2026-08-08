@@ -24,6 +24,7 @@ const jackpotBoard = require('./lib/jackpotBoard');
 const invites = require('./lib/invites');
 const dailyReport = require('./lib/dailyReport');
 const antifraud = require('./lib/antifraud');
+const backup = require('./lib/backup');
 const { isOwner } = require('./lib/owner');
 const { resolveBet } = require('./lib/bet');
 const { getUser } = require('./lib/economy');
@@ -186,6 +187,7 @@ client.once(Events.ClientReady, (c) => {
   dailyReport.attach(); // acumula estadísticas por día de cada partida
   dailyReport.startScheduler(c); // publica el reporte diario en el canal configurado
   antifraud.attach(); // registra apuestas/ganancias por hora para los límites anti-fraude
+  backup.startScheduler(c); // copias de seguridad automáticas de la base de datos
 });
 
 client.on(Events.InteractionCreate, async (interaction) => {
