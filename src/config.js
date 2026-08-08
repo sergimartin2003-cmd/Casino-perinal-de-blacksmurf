@@ -32,8 +32,24 @@ module.exports = {
   // Jackpot progresivo de /slots: un bote común que crece con las tiradas de
   // TODA la gente y lo revienta quien saque 💎💎💎 en la línea central.
   jackpot: {
-    seed: 5000,          // valor mínimo del bote (al que se reinicia tras ganarlo)
-    contribution: 0.02,  // % de cada apuesta de /slots que alimenta el bote (2%)
+    seed: 1000,          // valor base al que se reinicia el bote tras ganarlo
+    contribution: 0.01,  // % de cada apuesta de /slots que alimenta el bote (1%)
+
+    // Canal fijo donde se muestra el bote EN VIVO (un mensaje que se
+    // autoedita). Deja '' para desactivarlo. Rellena con el ID de un canal
+    // (activa Modo desarrollador en Discord → clic derecho en el canal → Copiar ID).
+    displayChannel: '',
+    boardRefreshMs: 60 * 1000, // cada cuánto se refresca el mensaje del bote
+
+    // Anti cuentas falsas: para COBRAR el bote hay que cumplir al menos UNA
+    // de estas dos condiciones. Si no, se alinean los 💎 pero el bote NO se
+    // entrega ni se reinicia (sigue creciendo para jugadores legítimos).
+    minAccountAgeDays: 7, // días de antigüedad de la cuenta de Discord
+    minInvites: 3,        // o haber invitado a esta gente al servidor
+    // Seguir las invitaciones requiere el intent privilegiado "Server Members"
+    // (actívalo en el Discord Developer Portal). Con false solo cuenta la
+    // antigüedad y el bot sigue funcionando sin intents privilegiados.
+    trackInvites: false,
   },
 
   colors: {

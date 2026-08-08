@@ -13,8 +13,8 @@ Bot de casino para Discord con **economía de moneda ficticia** (💎 **Nova**).
 - `/leaderboard` — ranking de más ricos
 
 **Juegos**
-- `/slots` 🎰 — tragaperras de 3 líneas con **comodín** 🃏 y **jackpot progresivo** 🏆 (RTP ≈ 95%). Un **2% de cada tirada** de todo el mundo alimenta un **bote común**; quien saque 💎💎💎 en la línea central se lo lleva entero y se anuncia en el canal de log.
-- `/jackpot` 🏆 — consulta el **bote progresivo** actual sin tener que jugar: cuánto hay acumulado, cuánto aporta cada tirada y quién fue el último en reventarlo
+- `/slots` 🎰 — tragaperras de 3 líneas con **comodín** 🃏 y **jackpot progresivo** 🏆 (RTP ≈ 95%). Un **1% de cada tirada** de todo el mundo alimenta un **bote común**; quien saque 💎💎💎 en la línea central se lo lleva entero, se anuncia en el canal de log y el bote se reinicia a un valor base (**1.000** por defecto). **Anti cuentas falsas:** para *cobrar* el bote hay que tener cierta antigüedad de cuenta **o** haber invitado a suficiente gente (ver abajo).
+- `/jackpot` 🏆 — consulta el **bote progresivo** actual sin tener que jugar: cuánto hay acumulado, cuánto aporta cada tirada, el requisito para cobrarlo y quién fue el último en reventarlo
 - `/ruleta` 🎡 — ruleta europea con **mesa interactiva**: coloca varias apuestas a la vez (rojo/negro, par/impar, docenas, columnas y número exacto), ajusta el valor de la ficha y gira, como en un casino real
 - `/blackjack` 🃏 — 21 contra la banca con **Pedir / Plantarse / Doblar / Dividir / Seguro**
 - `/poker` 🎴 — video póker *Jacks or Better* (retén cartas y cambia el resto)
@@ -42,7 +42,7 @@ Bot de casino para Discord con **economía de moneda ficticia** (💎 **Nova**).
 1. Entra en el [Discord Developer Portal](https://discord.com/developers/applications) → **New Application**.
 2. En **Bot** → *Reset Token* y copia el token.
 3. En **General Information** copia el **Application ID**.
-4. No hace falta activar *intents* privilegiados (el bot solo usa slash commands).
+4. No hace falta activar *intents* privilegiados (el bot solo usa slash commands). *Excepción:* si activas el conteo de invitaciones del jackpot (`jackpot.trackInvites`), necesitarás el intent **Server Members** (ver sección de personalización).
 
 ### 3. Configurar el proyecto
 ```bash
@@ -78,8 +78,17 @@ Casi todo se ajusta en [`src/config.js`](src/config.js):
 - **Saldo inicial, recompensas, cooldowns** (`economy`)
 - **Apuesta mínima/máxima** (`limits`)
 - **Colores de los embeds** (`colors`)
+- **Jackpot progresivo** (`jackpot`)
 
 Los pagos de cada juego están dentro de su archivo en `src/commands/`.
+
+### 🏆 Jackpot progresivo (`config.jackpot`)
+- `seed` — valor base al que se reinicia el bote tras ganarlo (por defecto **1.000**).
+- `contribution` — fracción de cada apuesta de `/slots` que alimenta el bote (por defecto **0.01** = 1%).
+- `displayChannel` — ID del canal fijo donde se muestra el bote **en vivo** (un mensaje que se autoedita). Déjalo `''` para desactivarlo.
+- `boardRefreshMs` — cada cuánto se refresca ese mensaje.
+- `minAccountAgeDays` / `minInvites` — **anti cuentas falsas**: para *cobrar* el bote el usuario debe cumplir al menos una: cuenta de Discord con esa antigüedad, **o** haber invitado a esa cantidad de gente. Si no cumple, alinea los 💎 pero el bote **no** se entrega ni se reinicia.
+- `trackInvites` — pon `true` para contar invitaciones (necesario para el requisito de invitados). ⚠️ Requiere activar el **intent privilegiado *Server Members*** en el [Developer Portal](https://discord.com/developers/applications) (Bot → *Privileged Gateway Intents*) y que el bot tenga permiso **Gestionar servidor**. Con `false` solo cuenta la antigüedad y el bot sigue sin intents privilegiados.
 
 ## 🗂️ Estructura
 ```

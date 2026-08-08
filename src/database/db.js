@@ -37,6 +37,19 @@ CREATE TABLE IF NOT EXISTS jackpot_wins (
   won_at  INTEGER NOT NULL
 );
 
+-- Mensaje fijo que muestra el bote en vivo en un canal (se autoedita).
+CREATE TABLE IF NOT EXISTS jackpot_board (
+  id         INTEGER PRIMARY KEY CHECK (id = 1),
+  channel_id TEXT NOT NULL,
+  message_id TEXT
+);
+
+-- Invitaciones acumuladas por cada usuario (anti cuentas falsas del jackpot).
+CREATE TABLE IF NOT EXISTS invites (
+  user_id TEXT PRIMARY KEY,
+  count   INTEGER NOT NULL DEFAULT 0
+);
+
 -- Apuestas de /cripto con ventana de tiempo real (se resuelven en diferido).
 CREATE TABLE IF NOT EXISTS crypto_pending (
   id          INTEGER PRIMARY KEY AUTOINCREMENT,

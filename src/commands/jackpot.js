@@ -30,6 +30,15 @@ module.exports = {
         { name: '🏅 Veces reventado', value: `${wins}`, inline: true }
       );
 
+    // Requisito anti cuentas falsas para poder cobrar el bote.
+    const reqs = [`**${config.jackpot.minAccountAgeDays}+ días** de antigüedad de cuenta`];
+    if (config.jackpot.trackInvites) reqs.push(`haber invitado a **${config.jackpot.minInvites}+** personas`);
+    embed.addFields({
+      name: '🛡️ Para cobrarlo',
+      value: `${reqs.join(' o ')} (evita cuentas falsas).`,
+      inline: false,
+    });
+
     if (last) {
       const when = Math.floor(last.won_at / 1000);
       embed.addFields({

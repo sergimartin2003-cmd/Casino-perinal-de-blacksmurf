@@ -147,6 +147,22 @@ function getJackpotWinsCount() {
   return jackpotWinsCountStmt.get().n;
 }
 
+// --- Invitaciones (para el gate anti cuentas falsas del jackpot) ---
+const addInviteStmt = db.prepare(
+  'INSERT INTO invites (user_id, count) VALUES (?, 1) ON CONFLICT(user_id) DO UPDATE SET count = count + 1'
+);
+const getInviteCountStmt = db.prepare('SELECT count FROM invites WHERE user_id = ?');
+
+/** Suma una invitación acreditada a un usuario. */
+function addInvite(userId) {
+  addInviteStmt.run(userId);
+}
+
+/** Invitaciones acreditadas a un usuario (0 si ninguna). */
+function getInviteCount(userId) {
+  return getInviteCountStmt.get(userId)?.count ?? 0;
+}
+
 module.exports = {
   getUser,
   setBalance,
@@ -163,5 +179,7 @@ module.exports = {
   recordJackpotWin,
   getLastJackpotWin,
   getJackpotWinsCount,
+  addInvite,
+  getInviteCount,
   gameEvents,
 };

@@ -10,6 +10,8 @@ const {
   recordJackpotWin,
 } = require('../lib/economy');
 const { announceJackpot } = require('../lib/gamelog');
+const { jackpotEligibility } = require('../lib/eligibility');
+const jackpotBoard = require('../lib/jackpotBoard');
 const { resolveBet } = require('../lib/bet');
 const { base } = require('../lib/embeds');
 const { coins, fmt } = require('../lib/format');
@@ -111,12 +113,20 @@ module.exports = {
         winLabels.push(`💠 PANTALLA COMPLETA de ${fsSym} · x${PAY[fsSym] * FULL_BONUS}`);
       }
 
-      // Jackpot: tres diamantes en la línea central revientan el bote común.
+      // Jackpot: tres diamantes en la línea central revientan el bote común,
+      // pero solo si el jugador pasa el filtro anti cuentas falsas.
       let jackpotWon = 0;
       if (rowSyms[1] === '💎') {
-        jackpotWon = getJackpot();
-        resetJackpot();
-        recordJackpotWin(interaction.user.id, jackpotWon);
+        const elig = jackpotEligibility(interaction.user);
+        if (elig.eligible) {
+          jackpotWon = getJackpot();
+          resetJackpot();
+          recordJackpotWin(interaction.user.id, jackpotWon);
+        } else {
+          const reqs = [`${config.jackpot.minAccountAgeDays} días de antigüedad`];
+          if (config.jackpot.trackInvites) reqs.push(`${config.jackpot.minInvites} invitados`);
+          winLabels.push(`💎💎💎 ¡Bote a tiro! Pero necesitas ${reqs.join(' o ')} para cobrarlo.`);
+        }
       }
 
       const profit = Math.round(wager * mult);
@@ -146,6 +156,8 @@ module.exports = {
       if (jackpotWon > 0) {
         announceJackpot(interaction.client, { userId: interaction.user.id, amount: jackpotWon }).catch(() => {});
       }
+      // Refresca el tablero fijo (el bote creció con esta tirada o se reinició).
+      jackpotBoard.refresh(interaction.client).catch(() => {});
     };
 
     await runGameLoop(interaction, wager, round);

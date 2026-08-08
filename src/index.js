@@ -20,12 +20,22 @@ const gamelog = require('./lib/gamelog');
 const lottery = require('./lib/lottery');
 const markets = require('./lib/markets');
 const espn = require('./lib/espn');
+const jackpotBoard = require('./lib/jackpotBoard');
+const invites = require('./lib/invites');
 const { isOwner } = require('./lib/owner');
 const { resolveBet } = require('./lib/bet');
 const { getUser } = require('./lib/economy');
 const { fmt } = require('./lib/format');
 
-const client = new Client({ intents: [GatewayIntentBits.Guilds] });
+// Intents mínimos por defecto (sin privilegiados). El seguimiento de
+// invitaciones del jackpot exige GuildMembers (privilegiado) + GuildInvites;
+// solo se piden si se activa en config para no romper el arranque del bot.
+const intents = [GatewayIntentBits.Guilds];
+if (config.jackpot.trackInvites) {
+  intents.push(GatewayIntentBits.GuildMembers, GatewayIntentBits.GuildInvites);
+}
+
+const client = new Client({ intents });
 client.commands = new Collection();
 
 // Carga dinámica de todos los comandos de /commands
@@ -168,6 +178,9 @@ client.once(Events.ClientReady, (c) => {
   gamelog.attach(c); // registra cada partida en el canal de log
   lottery.startScheduler(c); // sortea la lotería cuando vence su temporizador
   markets.startMatchResolver(c); // resuelve solo los mercados de partidos reales
+  jackpotBoard.start(c); // muestra el bote en vivo en el canal fijo configurado
+  invites.attach(c); // rastrea invitaciones (si trackInvites está activado)
+  invites.init(c); // cachea las invitaciones actuales de cada servidor
 });
 
 client.on(Events.InteractionCreate, async (interaction) => {
