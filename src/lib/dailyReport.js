@@ -94,6 +94,7 @@ function buildReport(day, vips = 0) {
   const top = topBettorStmt.get(day);
   const beneficio = s.wagered - s.returned;
   const pct = s.wagered > 0 ? (beneficio / s.wagered) * 100 : 0;
+  const sold = s.sold || 0;
   const topLine = top ? `<@${top.user_id}> (${fmt(top.wagered)} monedas)` : '—';
 
   return [
@@ -103,11 +104,12 @@ function buildReport(day, vips = 0) {
     `Apuestas totales: ${fmt(s.bets)}`,
     `Monedas apostadas: ${fmt(s.wagered)}`,
     `Monedas ganadas: ${fmt(s.returned)}`,
-    `Beneficio del servidor: ${fmt(beneficio)} monedas (${pct.toFixed(1)}%)`,
+    `Beneficio del servidor: ${fmt(beneficio)} monedas (${pct.toFixed(1)}%) · ${euros(beneficio)} €`,
     `Top apostador: ${topLine}`,
     `Jackpot actual: ${fmt(getJackpot())} monedas`,
     `VIPs activos: ${fmt(vips)}`,
-    `Ingresos estimados (ventas): ${euros(s.sold || 0)} €`,
+    `Monedas compradas: ${fmt(sold)}`,
+    `Ingresos estimados (ventas): ${euros(sold)} €`,
   ].join('\n');
 }
 

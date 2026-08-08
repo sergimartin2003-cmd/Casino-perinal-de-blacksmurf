@@ -100,11 +100,12 @@ Usuarios activos: 347
 Apuestas totales: 12,450
 Monedas apostadas: 1,234,500
 Monedas ganadas: 1,109,800
-Beneficio del servidor: 124,700 monedas (10.1%)
+Beneficio del servidor: 124,700 monedas (10.1%) · 1,247 €
 Top apostador: @Juanito (45,000 monedas)
 Jackpot actual: 87,300 monedas
 VIPs activos: 23
-Ingresos estimados (ventas): 1,247 €
+Monedas compradas: 250,000
+Ingresos estimados (ventas): 2,500 €
 ```
 
 - `channel` — ID del canal donde se publica el reporte (`''` = desactivado).
