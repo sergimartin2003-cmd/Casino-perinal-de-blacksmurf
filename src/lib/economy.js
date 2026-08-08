@@ -95,8 +95,10 @@ const setDailyStmt = db.prepare(
 const setWorkStmt = db.prepare('UPDATE users SET last_work = ? WHERE id = ?');
 
 // --- Jackpot progresivo (tragaperras) ---
+// Bote común compartido por todo el servidor: crece con las tiradas de la gente
+// (un % de cada apuesta) y se reinicia a la semilla cuando alguien lo revienta.
 const JACKPOT_KEY = 'slots_jackpot';
-const JACKPOT_SEED = 5000;
+const JACKPOT_SEED = config.jackpot.seed;
 const getMetaStmt = db.prepare('SELECT value FROM meta WHERE key = ?');
 const setMetaStmt = db.prepare(
   'INSERT INTO meta (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value'
@@ -122,6 +124,29 @@ function resetJackpot() {
   return JACKPOT_SEED;
 }
 
+const insertJackpotWinStmt = db.prepare(
+  'INSERT INTO jackpot_wins (user_id, amount, won_at) VALUES (?, ?, ?)'
+);
+const lastJackpotWinStmt = db.prepare(
+  'SELECT user_id, amount, won_at FROM jackpot_wins ORDER BY id DESC LIMIT 1'
+);
+const jackpotWinsCountStmt = db.prepare('SELECT COUNT(*) AS n FROM jackpot_wins');
+
+/** Guarda en el historial que un usuario reventó el bote. */
+function recordJackpotWin(userId, amount) {
+  insertJackpotWinStmt.run(userId, Math.round(amount), Date.now());
+}
+
+/** Último jackpot ganado: { user_id, amount, won_at } o undefined si nunca. */
+function getLastJackpotWin() {
+  return lastJackpotWinStmt.get();
+}
+
+/** Nº de veces que se ha reventado el bote en total. */
+function getJackpotWinsCount() {
+  return jackpotWinsCountStmt.get().n;
+}
+
 module.exports = {
   getUser,
   setBalance,
@@ -135,5 +160,8 @@ module.exports = {
   getJackpot,
   addJackpot,
   resetJackpot,
+  recordJackpotWin,
+  getLastJackpotWin,
+  getJackpotWinsCount,
   gameEvents,
 };

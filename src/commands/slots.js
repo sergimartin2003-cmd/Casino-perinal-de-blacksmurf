@@ -7,7 +7,9 @@ const {
   getJackpot,
   addJackpot,
   resetJackpot,
+  recordJackpotWin,
 } = require('../lib/economy');
+const { announceJackpot } = require('../lib/gamelog');
 const { resolveBet } = require('../lib/bet');
 const { base } = require('../lib/embeds');
 const { coins, fmt } = require('../lib/format');
@@ -31,7 +33,7 @@ const REEL = [
 // Multiplicador de BENEFICIO por línea de tres iguales (RTP ≈ 0.95, 3 líneas).
 const PAY = { '🍒': 3, '🍋': 4, '🍇': 5, '⭐': 7, '🔔': 9, '7️⃣': 18, '💎': 40 };
 const FULL_BONUS = 5; // pantalla completa: PAY[símbolo] × 5 extra
-const JACKPOT_RATE = 0.02; // 2% de cada apuesta alimenta el bote
+const JACKPOT_RATE = config.jackpot.contribution; // % de cada apuesta que alimenta el bote común
 
 const spinReel = () => Array.from({ length: 3 }, () => REEL[Math.floor(Math.random() * REEL.length)]);
 
@@ -109,11 +111,12 @@ module.exports = {
         winLabels.push(`💠 PANTALLA COMPLETA de ${fsSym} · x${PAY[fsSym] * FULL_BONUS}`);
       }
 
-      // Jackpot: tres diamantes en la línea central.
+      // Jackpot: tres diamantes en la línea central revientan el bote común.
       let jackpotWon = 0;
       if (rowSyms[1] === '💎') {
         jackpotWon = getJackpot();
         resetJackpot();
+        recordJackpotWin(interaction.user.id, jackpotWon);
       }
 
       const profit = Math.round(wager * mult);
@@ -138,6 +141,11 @@ module.exports = {
       );
 
       await interaction.editReply({ embeds: [finalEmbed], components: [replayRow(wager)] });
+
+      // Aviso público a todo el servidor cuando alguien revienta el bote común.
+      if (jackpotWon > 0) {
+        announceJackpot(interaction.client, { userId: interaction.user.id, amount: jackpotWon }).catch(() => {});
+      }
     };
 
     await runGameLoop(interaction, wager, round);

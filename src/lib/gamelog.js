@@ -2,6 +2,7 @@
 // partida en el canal de log configurado (config.logChannel).
 const { gameEvents } = require('./economy');
 const { fmt } = require('./format');
+const { base } = require('./embeds');
 const config = require('../config');
 
 const GAME_LABEL = {
@@ -45,4 +46,39 @@ function attach(client) {
   });
 }
 
-module.exports = { attach };
+/**
+ * Anuncia públicamente que alguien reventó el jackpot progresivo de /slots.
+ * Publica en el canal de log (config.logChannel) y hace ping al ganador.
+ * Nunca lanza: un fallo de log no debe romper la partida.
+ */
+async function announceJackpot(client, { userId, amount }) {
+  const channelId = config.logChannel;
+  if (!channelId) return; // log desactivado
+
+  try {
+    const channel = await client.channels.fetch(channelId);
+    if (!channel || !channel.isTextBased()) return;
+
+    const sym = config.currency.symbol;
+    const embed = base(config.colors.gold)
+      .setTitle('🏆  ¡JACKPOT REVENTADO!  🎰')
+      .setDescription(
+        `<@${userId}> ha reventado el bote progresivo de las tragaperras ` +
+          `y se lleva **${fmt(amount)}** ${sym} 💥`
+      )
+      .addFields({
+        name: 'Nuevo bote',
+        value: `Arranca de nuevo en **${fmt(config.jackpot.seed)}** ${sym} y volverá a crecer con cada tirada.`,
+      });
+
+    await channel.send({
+      content: `🎉 <@${userId}>`,
+      embeds: [embed],
+      allowedMentions: { users: [userId] },
+    });
+  } catch {
+    // Sin permisos o canal borrado: no rompemos el juego por un fallo de log.
+  }
+}
+
+module.exports = { attach, announceJackpot };

@@ -13,7 +13,8 @@ Bot de casino para Discord con **economía de moneda ficticia** (💎 **Nova**).
 - `/leaderboard` — ranking de más ricos
 
 **Juegos**
-- `/slots` 🎰 — tragaperras de 3 líneas con **comodín** 🃏 y **jackpot progresivo** 🏆 (RTP ≈ 95%)
+- `/slots` 🎰 — tragaperras de 3 líneas con **comodín** 🃏 y **jackpot progresivo** 🏆 (RTP ≈ 95%). Un **2% de cada tirada** de todo el mundo alimenta un **bote común**; quien saque 💎💎💎 en la línea central se lo lleva entero y se anuncia en el canal de log.
+- `/jackpot` 🏆 — consulta el **bote progresivo** actual sin tener que jugar: cuánto hay acumulado, cuánto aporta cada tirada y quién fue el último en reventarlo
 - `/ruleta` 🎡 — ruleta europea con **mesa interactiva**: coloca varias apuestas a la vez (rojo/negro, par/impar, docenas, columnas y número exacto), ajusta el valor de la ficha y gira, como en un casino real
 - `/blackjack` 🃏 — 21 contra la banca con **Pedir / Plantarse / Doblar / Dividir / Seguro**
 - `/poker` 🎴 — video póker *Jacks or Better* (retén cartas y cambia el resto)

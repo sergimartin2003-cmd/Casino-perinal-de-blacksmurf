@@ -29,6 +29,14 @@ CREATE TABLE IF NOT EXISTS meta (
   value INTEGER NOT NULL
 );
 
+-- Historial de jackpots reventados en /slots (para mostrar el último ganador).
+CREATE TABLE IF NOT EXISTS jackpot_wins (
+  id      INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id TEXT NOT NULL,           -- TEXT: los IDs de Discord no caben con precisión en INTEGER
+  amount  INTEGER NOT NULL,
+  won_at  INTEGER NOT NULL
+);
+
 -- Apuestas de /cripto con ventana de tiempo real (se resuelven en diferido).
 CREATE TABLE IF NOT EXISTS crypto_pending (
   id          INTEGER PRIMARY KEY AUTOINCREMENT,

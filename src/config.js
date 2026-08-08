@@ -29,6 +29,13 @@ module.exports = {
     maxBet: 250000,
   },
 
+  // Jackpot progresivo de /slots: un bote común que crece con las tiradas de
+  // TODA la gente y lo revienta quien saque 💎💎💎 en la línea central.
+  jackpot: {
+    seed: 5000,          // valor mínimo del bote (al que se reinicia tras ganarlo)
+    contribution: 0.02,  // % de cada apuesta de /slots que alimenta el bote (2%)
+  },
+
   colors: {
     primary: 0x9b5de5, // morado Nova
     gold: 0xf5c518,

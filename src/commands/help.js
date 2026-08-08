@@ -26,6 +26,7 @@ module.exports = {
           name: '🎲 Juegos',
           value: [
             '`/slots` — 🎰 tragaperras con comodín y jackpot progresivo',
+            '`/jackpot` — 🏆 consulta el bote progresivo (crece con las tiradas de todos)',
             '`/ruleta` — 🎡 ruleta europea: coloca varias apuestas en la mesa y gira',
             '`/blackjack` — 🃏 21 con pedir/plantar/doblar/dividir/seguro',
             '`/poker` — 🎴 video póker Jacks or Better',
