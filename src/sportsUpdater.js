@@ -25,23 +25,34 @@ class SportsUpdater {
         };
     }
 
-    // Pide a la API la lista de bookmakers válidos y cachea unos pocos (una vez).
+    // Pide a la API la lista de bookmakers y elige solo RECREATIVOS (plan gratis).
+    // Las casas "sharp"/exchange dan 403 en el plan gratuito, así que se evitan.
     async getValidBookmakers() {
         if (this._bmFetched) return this._bookmakers;
         this._bmFetched = true;
         this._bookmakers = '';
+        // Casas recreativas típicas (normalizadas: minúsculas, sin símbolos).
+        const RECREATIONAL = [
+            'bet365', 'williamhill', 'unibet', 'betway', '888sport', 'bwin', 'ladbrokes', 'coral',
+            'paddypower', 'betfred', 'betvictor', 'betsson', 'betano', 'tipico', 'betclic',
+            'sportingbet', 'betsafe', 'nordicbet', 'marathonbet', 'betwinner',
+        ];
+        const norm = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
         try {
             const list = await this.api.getBookmakers();
             const arr = Array.isArray(list) ? list : (list?.bookmakers || list?.data || list?.results || []);
+            const available = new Map();
+            for (const b of arr) {
+                const name = typeof b === 'string' ? b : (b.name ?? b.slug ?? b.key ?? b.id);
+                if (name) available.set(norm(name), name);
+            }
+            const chosen = RECREATIONAL.map((r) => available.get(r)).filter(Boolean);
+            this._bookmakers = chosen.slice(0, 8).join(',');
             if (!this._bmSampleLogged) {
                 this._bmSampleLogged = true;
-                console.log('[Updater] Bookmakers (ejemplo):', JSON.stringify(arr[0] ?? list).slice(0, 300));
+                console.log('[Updater] Bookmakers disponibles (muestra):', [...available.values()].slice(0, 25).join(', '));
             }
-            const slugs = arr
-                .map((b) => (typeof b === 'string' ? b : (b.slug ?? b.key ?? b.id ?? b.name)))
-                .filter(Boolean);
-            this._bookmakers = slugs.slice(0, 8).join(',');
-            console.log(`[Updater] Usando bookmakers: ${this._bookmakers || '(ninguno)'}`);
+            console.log(`[Updater] Usando bookmakers recreativos: ${this._bookmakers || '(ninguno reconocido — mira la muestra de arriba)'}`);
         } catch (e) {
             console.error('[Updater] No pude obtener bookmakers:', e.message);
         }
