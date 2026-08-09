@@ -2,6 +2,14 @@ const OddsApi = require('./oddsApi');
 const SportsCache = require('./sportsCache');
 const SportsCleanup = require('./sportsCleanup');
 
+// Mapea el estado de la Odds API a los estados internos.
+function mapStatus(s) {
+    const v = String(s || '').toLowerCase();
+    if (['settled', 'finished', 'closed', 'ended', 'ft', 'complete'].includes(v)) return 'finished';
+    if (['inplay', 'live', 'playing', 'started'].includes(v)) return 'live';
+    return 'scheduled';
+}
+
 class SportsUpdater {
     constructor(apiKey, dbPath) {
         this.api = new OddsApi(apiKey);
@@ -72,11 +80,12 @@ class SportsUpdater {
         // Normaliza (la API puede usar otros nombres de campo) y descarta incompletos.
         const norm = allEvents.map((e) => ({
             id: String(e.id ?? e.eventId ?? e.event_id ?? ''),
-            league: e.league ?? e.league_name ?? e.competition ?? 'Unknown',
-            home_team: e.home_team ?? e.home ?? e.homeTeam ?? e.teams?.home ?? '?',
-            away_team: e.away_team ?? e.away ?? e.awayTeam ?? e.teams?.away ?? '?',
-            start_time: e.start_time ?? e.commence_time ?? e.starts ?? e.startTime ?? e.date ?? null,
-            status: e.status ?? 'scheduled',
+            // league viene como objeto { name, slug } en odds-api.io.
+            league: e.league?.name ?? e.league?.slug ?? (typeof e.league === 'string' ? e.league : 'Unknown'),
+            home_team: e.home ?? e.home_team ?? e.homeTeam ?? e.teams?.home ?? '?',
+            away_team: e.away ?? e.away_team ?? e.awayTeam ?? e.teams?.away ?? '?',
+            start_time: e.date ?? e.start_time ?? e.commence_time ?? e.starts ?? e.startTime ?? null,
+            status: mapStatus(e.status),
         })).filter((e) => e.id && e.start_time);
 
         if (norm.length === 0) {
@@ -90,19 +99,28 @@ class SportsUpdater {
         let oddsData = [];
 
         try {
-            const odds = await this.api.getOddsMulti(eventIds);
-            if (odds && odds.length > 0) {
-                for (const odd of odds) {
+            const oddsResp = await this.api.getOddsMulti(eventIds);
+            if (!this._oddsSampleLogged && Array.isArray(oddsResp) && oddsResp[0]) {
+                this._oddsSampleLogged = true;
+                console.log('[Updater] Ejemplo de cuota cruda:', JSON.stringify(oddsResp[0]).slice(0, 500));
+            }
+            if (Array.isArray(oddsResp)) {
+                for (const odd of oddsResp) {
+                    // Busca las cuotas moneyline en varias formas posibles.
+                    const m = odd.odds || odd.moneyline || odd.markets?.moneyline || odd.markets?.h2h || {};
                     oddsData.push({
-                        event_id: odd.event_id,
-                        bookmaker: odd.bookmaker,
+                        event_id: String(odd.eventId ?? odd.event_id ?? odd.id ?? ''),
+                        bookmaker: odd.bookmaker ?? odd.bookmaker_name ?? odd.bookie ?? 'Unknown',
                         market_type: 'moneyline',
-                        home_odds: odd.odds?.home || null,
-                        away_odds: odd.odds?.away || null,
-                        draw_odds: odd.odds?.draw || null
+                        // saveOdds lee item.odds.{home,away,draw}
+                        odds: {
+                            home: m.home ?? m['1'] ?? null,
+                            draw: m.draw ?? m['X'] ?? m.x ?? null,
+                            away: m.away ?? m['2'] ?? null,
+                        },
                     });
                 }
-                this.cache.saveOdds(oddsData);
+                if (oddsData.length > 0) this.cache.saveOdds(oddsData);
             }
         } catch (error) {
             console.error(`[Updater] Error obteniendo cuotas: ${error.message}`);
