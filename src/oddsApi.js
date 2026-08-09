@@ -5,10 +5,11 @@ class OddsApi {
     constructor(apiKey) {
         this.apiKey = apiKey;
         this.baseUrl = 'https://api.odds-api.io/v3';
+        // Slugs de deporte de odds-api.io (fútbol es 'football', NO 'soccer').
         this.sportsMap = {
-            'football': 'soccer',
+            'football': 'football',
             'basketball': 'basketball',
-            'mma': 'mma'
+            'tennis': 'tennis'
         };
         this.dailyLimit = 500;
         this.callsToday = 0;

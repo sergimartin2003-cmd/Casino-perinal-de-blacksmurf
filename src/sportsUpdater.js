@@ -8,10 +8,12 @@ class SportsUpdater {
         this.cache = new SportsCache(dbPath);
         this.cleanup = new SportsCleanup(dbPath, this.api);
 
+        // leagues vacío = trae eventos por DEPORTE (sin depender de slugs de liga,
+        // que varían por proveedor). Se pueden reañadir ligas concretas por slug
+        // (p. ej. 'premier-league', 'usa-nba') cuando se confirmen en la API.
         this.sportsToTrack = {
-            'football': { leagues: ['UEFA Champions League', 'Premier League', 'La Liga', 'Bundesliga', 'Serie A'] },
-            'basketball': { leagues: ['NBA', 'EuroLeague'] },
-            'mma': { leagues: ['UFC', 'Bellator'] }
+            'football': { leagues: [] },
+            'basketball': { leagues: [] }
         };
     }
 
@@ -61,9 +63,30 @@ class SportsUpdater {
             return { updated: 0 };
         }
 
-        this.cache.saveEvents(allEvents, sport);
+        // Muestra un evento crudo (solo la primera vez) para ver el formato real.
+        if (!this._sampleLogged) {
+            this._sampleLogged = true;
+            console.log('[Updater] Ejemplo de evento crudo:', JSON.stringify(allEvents[0]).slice(0, 500));
+        }
 
-        const eventIds = allEvents.map(e => e.id);
+        // Normaliza (la API puede usar otros nombres de campo) y descarta incompletos.
+        const norm = allEvents.map((e) => ({
+            id: String(e.id ?? e.eventId ?? e.event_id ?? ''),
+            league: e.league ?? e.league_name ?? e.competition ?? 'Unknown',
+            home_team: e.home_team ?? e.home ?? e.homeTeam ?? e.teams?.home ?? '?',
+            away_team: e.away_team ?? e.away ?? e.awayTeam ?? e.teams?.away ?? '?',
+            start_time: e.start_time ?? e.commence_time ?? e.starts ?? e.startTime ?? e.date ?? null,
+            status: e.status ?? 'scheduled',
+        })).filter((e) => e.id && e.start_time);
+
+        if (norm.length === 0) {
+            console.log(`[Updater] Eventos recibidos pero sin campos reconocibles para ${sport} (revisa el ejemplo de arriba).`);
+            return { updated: 0 };
+        }
+
+        this.cache.saveEvents(norm, sport);
+
+        const eventIds = norm.map((e) => e.id);
         let oddsData = [];
 
         try {
