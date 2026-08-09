@@ -16,6 +16,7 @@ const antifraud = require('./lib/antifraud');
 const backup = require('./lib/backup');
 const SportsUpdater = require('./sportsUpdater');
 const SportsCleanup = require('./sportsCleanup');
+const sportsBoard = require('./sportsBoard');
 const { isStaff } = require('./lib/owner');
 
 const ODDS_API_KEY = process.env.ODDS_API_KEY;
@@ -90,9 +91,14 @@ client.once(Events.ClientReady, (c) => {
   } else {
     console.log('⚠️  ODDS_API_KEY no configurada. Apuestas deportivas desactivadas.');
   }
+  sportsBoard.start(c); // panel clickable de apuestas deportivas en su canal
 });
 
 client.on(Events.InteractionCreate, async (interaction) => {
+  // Panel de apuestas deportivas: botón de opción → ventana de cantidad → apuesta.
+  if (interaction.isButton() && interaction.customId.startsWith('sbet:')) return sportsBoard.handleBetButton(interaction);
+  if (interaction.isModalSubmit() && interaction.customId.startsWith('sbetamt:')) return sportsBoard.handleBetModal(interaction);
+
   if (!interaction.isChatInputCommand()) return;
   const command = client.commands.get(interaction.commandName);
   if (!command) return;

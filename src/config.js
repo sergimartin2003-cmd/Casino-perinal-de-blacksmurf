@@ -87,6 +87,13 @@ module.exports = {
     channel: '', // canal donde se anuncia el sorteo (vacío = sin anuncio)
   },
 
+  // Panel clickable de apuestas deportivas: publica un mensaje por partido
+  // con botones para apostar, y lo borra cuando el partido termina.
+  sports: {
+    boardChannel: '1526682410773909535', // canal del panel ('' = desactivado)
+    boardRefreshMs: 2 * 60 * 1000,        // cada cuánto se sincroniza el panel
+  },
+
   // Copias de seguridad automáticas de la base de datos (data/casino.db).
   backup: {
     enabled: true,

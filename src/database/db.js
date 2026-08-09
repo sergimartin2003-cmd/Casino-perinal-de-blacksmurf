@@ -170,4 +170,13 @@ if (fs.existsSync(sportsMigration)) {
   db.exec(fs.readFileSync(sportsMigration, 'utf8'));
 }
 
+// Panel clickable de apuestas deportivas: un mensaje por evento en un canal.
+db.exec(`
+CREATE TABLE IF NOT EXISTS sports_board (
+  event_id   TEXT PRIMARY KEY,
+  channel_id TEXT NOT NULL,
+  message_id TEXT NOT NULL
+);
+`);
+
 module.exports = db;
