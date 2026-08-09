@@ -25,6 +25,29 @@ class SportsUpdater {
         };
     }
 
+    // Pide a la API la lista de bookmakers válidos y cachea unos pocos (una vez).
+    async getValidBookmakers() {
+        if (this._bmFetched) return this._bookmakers;
+        this._bmFetched = true;
+        this._bookmakers = '';
+        try {
+            const list = await this.api.getBookmakers();
+            const arr = Array.isArray(list) ? list : (list?.bookmakers || list?.data || list?.results || []);
+            if (!this._bmSampleLogged) {
+                this._bmSampleLogged = true;
+                console.log('[Updater] Bookmakers (ejemplo):', JSON.stringify(arr[0] ?? list).slice(0, 300));
+            }
+            const slugs = arr
+                .map((b) => (typeof b === 'string' ? b : (b.slug ?? b.key ?? b.id ?? b.name)))
+                .filter(Boolean);
+            this._bookmakers = slugs.slice(0, 8).join(',');
+            console.log(`[Updater] Usando bookmakers: ${this._bookmakers || '(ninguno)'}`);
+        } catch (e) {
+            console.error('[Updater] No pude obtener bookmakers:', e.message);
+        }
+        return this._bookmakers;
+    }
+
     async updateAllSports() {
         console.log('[Updater] Actualizando todos los deportes...');
         const results = {};
@@ -109,7 +132,8 @@ class SportsUpdater {
         let oddsData = [];
 
         try {
-            const oddsResp = await this.api.getOddsMulti(eventIds);
+            const bms = await this.getValidBookmakers();
+            const oddsResp = bms ? await this.api.getOddsMulti(eventIds, bms) : [];
             if (!this._oddsSampleLogged && Array.isArray(oddsResp) && oddsResp[0]) {
                 this._oddsSampleLogged = true;
                 console.log('[Updater] Ejemplo de cuota cruda:', JSON.stringify(oddsResp[0]).slice(0, 500));

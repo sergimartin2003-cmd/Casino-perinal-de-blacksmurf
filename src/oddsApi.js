@@ -63,7 +63,11 @@ class OddsApi {
         return this._fetch(endpoint);
     }
 
-    async getOddsMulti(eventIds, bookmakers = 'bet365,pinnacle,williamhill,unibet,bwin') {
+    async getBookmakers() {
+        return this._fetch('/bookmakers?');
+    }
+
+    async getOddsMulti(eventIds, bookmakers = '') {
         if (!eventIds || eventIds.length === 0) return [];
         if (eventIds.length > 10) {
             const results = [];
