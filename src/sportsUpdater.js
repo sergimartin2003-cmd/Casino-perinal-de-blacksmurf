@@ -59,7 +59,7 @@ class SportsUpdater {
 
         if (allEvents.length === 0) {
             try {
-                const events = await this.api.getEvents(sport, null, 30);
+                const events = await this.api.getEvents(sport, null, 50);
                 allEvents = events || [];
             } catch (error) {
                 console.error(`[Updater] Error sin filtro: ${error.message}`);
@@ -126,8 +126,9 @@ class SportsUpdater {
             console.error(`[Updater] Error obteniendo cuotas: ${error.message}`);
         }
 
-        console.log(`[Updater] ${sport}: ${allEvents.length} eventos`);
-        return { updated: allEvents.length, odds: oddsData.length };
+        const upcoming = this.cache.getActiveEvents(sport, 100).length;
+        console.log(`[Updater] ${sport}: ${allEvents.length} recibidos · ${norm.length} guardados · ${upcoming} próximos (para el panel)`);
+        return { updated: norm.length, upcoming, odds: oddsData.length };
     }
 
     async checkFinishedEvents() {
