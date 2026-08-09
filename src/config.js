@@ -92,6 +92,10 @@ module.exports = {
   sports: {
     boardChannel: '1526682410773909535', // canal del panel ('' = desactivado)
     boardRefreshMs: 2 * 60 * 1000,        // cada cuánto se sincroniza el panel
+    // Casas de apuestas de las que sacar cuotas (nombres tal cual en odds-api.io,
+    // separadas por coma). Se usan estas primero; si no, casas recreativas comunes.
+    // Ojo: en el plan gratis solo valen casas "recreativas" (las "sharp" dan 403).
+    bookmakers: 'Stake,bet365',
   },
 
   // Copias de seguridad automáticas de la base de datos (data/casino.db).

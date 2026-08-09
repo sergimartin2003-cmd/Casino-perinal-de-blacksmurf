@@ -1,6 +1,7 @@
 const OddsApi = require('./oddsApi');
 const SportsCache = require('./sportsCache');
 const SportsCleanup = require('./sportsCleanup');
+const config = require('./config');
 
 // Mapea el estado de la Odds API a los estados internos.
 function mapStatus(s) {
@@ -31,13 +32,15 @@ class SportsUpdater {
         if (this._bmFetched) return this._bookmakers;
         this._bmFetched = true;
         this._bookmakers = '';
-        // Casas recreativas típicas (normalizadas: minúsculas, sin símbolos).
+        const norm = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+        // Preferencias del usuario (config.sports.bookmakers) primero; luego recreativas comunes.
+        const userPref = String(config.sports?.bookmakers || '').split(',').map(norm).filter(Boolean);
         const RECREATIONAL = [
             'bet365', 'williamhill', 'unibet', 'betway', '888sport', 'bwin', 'ladbrokes', 'coral',
             'paddypower', 'betfred', 'betvictor', 'betsson', 'betano', 'tipico', 'betclic',
-            'sportingbet', 'betsafe', 'nordicbet', 'marathonbet', 'betwinner',
+            'sportingbet', 'betsafe', 'nordicbet', 'marathonbet', 'stake',
         ];
-        const norm = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+        const preference = [...new Set([...userPref, ...RECREATIONAL])];
         try {
             const list = await this.api.getBookmakers();
             const arr = Array.isArray(list) ? list : (list?.bookmakers || list?.data || list?.results || []);
@@ -46,17 +49,35 @@ class SportsUpdater {
                 const name = typeof b === 'string' ? b : (b.name ?? b.slug ?? b.key ?? b.id);
                 if (name) available.set(norm(name), name);
             }
-            const chosen = RECREATIONAL.map((r) => available.get(r)).filter(Boolean);
+            const chosen = preference.map((p) => available.get(p)).filter(Boolean);
             this._bookmakers = chosen.slice(0, 8).join(',');
+            // Subconjunto "seguro": recreativas EXCLUYENDO las preferidas del usuario
+            // (son las sospechosas de ser de pago y tumbar toda la petición con un 403).
+            this._safeBookmakers = RECREATIONAL
+                .filter((r) => !userPref.includes(r))
+                .map((r) => available.get(r))
+                .filter(Boolean)
+                .slice(0, 8)
+                .join(',');
             if (!this._bmSampleLogged) {
                 this._bmSampleLogged = true;
                 console.log('[Updater] Bookmakers disponibles (muestra):', [...available.values()].slice(0, 25).join(', '));
             }
-            console.log(`[Updater] Usando bookmakers recreativos: ${this._bookmakers || '(ninguno reconocido — mira la muestra de arriba)'}`);
+            console.log(`[Updater] Usando bookmakers: ${this._bookmakers || '(ninguno reconocido — mira la muestra de arriba)'}`);
         } catch (e) {
             console.error('[Updater] No pude obtener bookmakers:', e.message);
         }
         return this._bookmakers;
+    }
+
+    // Pide cuotas devolviendo [] si falla (para poder reintentar con otras casas).
+    async _fetchOdds(eventIds, bookmakers) {
+        try {
+            return await this.api.getOddsMulti(eventIds, bookmakers);
+        } catch (e) {
+            console.error(`[Updater] Cuotas con [${bookmakers}] falló: ${e.message}`);
+            return [];
+        }
     }
 
     async updateAllSports() {
@@ -143,8 +164,20 @@ class SportsUpdater {
         let oddsData = [];
 
         try {
-            const bms = await this.getValidBookmakers();
-            const oddsResp = bms ? await this.api.getOddsMulti(eventIds, bms) : [];
+            await this.getValidBookmakers(); // asegura _bookmakers y _safeBookmakers (cacheado)
+            // Si ya sabemos que tus casas preferidas no dan cuotas, vamos directos a las seguras.
+            const primary = (this._useSafeOnly && this._safeBookmakers) ? this._safeBookmakers : this._bookmakers;
+            let oddsResp = primary ? await this._fetchOdds(eventIds, primary) : [];
+            // Si tus casas preferidas no dieron cuotas (p. ej. una es de pago), reintenta con recreativas.
+            if ((!oddsResp || oddsResp.length === 0) && this._safeBookmakers && this._safeBookmakers !== primary) {
+                console.log(`[Updater] Reintento de cuotas con recreativas: ${this._safeBookmakers}`);
+                oddsResp = await this._fetchOdds(eventIds, this._safeBookmakers);
+                if (oddsResp && oddsResp.length > 0) {
+                    // Recuerda la decisión: a partir de ahora usa solo las seguras (ahorra llamadas a la API).
+                    this._useSafeOnly = true;
+                    console.log('[Updater] Tus casas preferidas no dan cuotas en este plan; usaré recreativas de ahora en adelante.');
+                }
+            }
             if (!this._oddsSampleLogged && Array.isArray(oddsResp) && oddsResp[0]) {
                 this._oddsSampleLogged = true;
                 console.log('[Updater] Ejemplo de cuota cruda:', JSON.stringify(oddsResp[0]).slice(0, 500));
