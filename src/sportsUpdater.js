@@ -26,21 +26,18 @@ class SportsUpdater {
         };
     }
 
-    // Pide a la API la lista de bookmakers y elige solo RECREATIVOS (plan gratis).
-    // Las casas "sharp"/exchange dan 403 en el plan gratuito, así que se evitan.
+    // Elige las casas de apuestas a pedir. Manda EXACTAMENTE las que tú
+    // configuraste en config.sports.bookmakers (p. ej. "Stake,bet365"), porque
+    // el plan de odds-api.io bloquea la selección en el servidor: si pides otras
+    // o más de la cuenta, devuelve 403. Si no configuras ninguna, prueba unas
+    // recreativas y dejamos que el 403 nos diga cuáles permite tu plan.
     async getValidBookmakers() {
         if (this._bmFetched) return this._bookmakers;
         this._bmFetched = true;
         this._bookmakers = '';
         const norm = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-        // Preferencias del usuario (config.sports.bookmakers) primero; luego recreativas comunes.
-        const userPref = String(config.sports?.bookmakers || '').split(',').map(norm).filter(Boolean);
-        const RECREATIONAL = [
-            'bet365', 'williamhill', 'unibet', 'betway', '888sport', 'bwin', 'ladbrokes', 'coral',
-            'paddypower', 'betfred', 'betvictor', 'betsson', 'betano', 'tipico', 'betclic',
-            'sportingbet', 'betsafe', 'nordicbet', 'marathonbet', 'stake',
-        ];
-        const preference = [...new Set([...userPref, ...RECREATIONAL])];
+        const userPref = String(config.sports?.bookmakers || '').split(',').map((x) => x.trim()).filter(Boolean);
+        const RECREATIONAL = ['bet365', 'stake', 'williamhill', 'unibet', 'betway', '888sport'];
         try {
             const list = await this.api.getBookmakers();
             const arr = Array.isArray(list) ? list : (list?.bookmakers || list?.data || list?.results || []);
@@ -49,16 +46,15 @@ class SportsUpdater {
                 const name = typeof b === 'string' ? b : (b.name ?? b.slug ?? b.key ?? b.id);
                 if (name) available.set(norm(name), name);
             }
-            const chosen = preference.map((p) => available.get(p)).filter(Boolean);
-            this._bookmakers = chosen.slice(0, 8).join(',');
-            // Subconjunto "seguro": recreativas EXCLUYENDO las preferidas del usuario
-            // (son las sospechosas de ser de pago y tumbar toda la petición con un 403).
-            this._safeBookmakers = RECREATIONAL
-                .filter((r) => !userPref.includes(r))
-                .map((r) => available.get(r))
-                .filter(Boolean)
-                .slice(0, 8)
-                .join(',');
+            let chosen;
+            if (userPref.length) {
+                // Usa TAL CUAL tus casas (casadas con el nombre exacto de la API si existe).
+                chosen = userPref.map((p) => available.get(norm(p)) || p);
+            } else {
+                // Sin preferencia: prueba 2 recreativas; el plan las recortará y aprenderemos cuáles valen.
+                chosen = RECREATIONAL.map((r) => available.get(r)).filter(Boolean).slice(0, 2);
+            }
+            this._bookmakers = chosen.join(',');
             if (!this._bmSampleLogged) {
                 this._bmSampleLogged = true;
                 console.log('[Updater] Bookmakers disponibles (muestra):', [...available.values()].slice(0, 25).join(', '));
@@ -66,11 +62,46 @@ class SportsUpdater {
             console.log(`[Updater] Usando bookmakers: ${this._bookmakers || '(ninguno reconocido — mira la muestra de arriba)'}`);
         } catch (e) {
             console.error('[Updater] No pude obtener bookmakers:', e.message);
+            // Si no pudimos listar, usa tu preferencia tal cual la escribiste.
+            this._bookmakers = userPref.join(',');
         }
         return this._bookmakers;
     }
 
-    // Pide cuotas devolviendo [] si falla (para poder reintentar con otras casas).
+    // Extrae las casas permitidas de un error 403 del tipo:
+    // "You're allowed max 2 bookmakers. Allowed: Bet365, Stake. To reset..."
+    _parseAllowedBookmakers(msg) {
+        const s = String(msg || '');
+        const i = s.indexOf('Allowed:');
+        if (i === -1) return null;
+        // Corta la lista justo antes del ". To reset" / ". Upgrade" que la sigue.
+        let rest = s.slice(i + 'Allowed:'.length).split(/\.\s+(?:To reset|Upgrade|Visit)/i)[0];
+        const books = rest.split(',').map((x) => x.trim().replace(/\.\s*$/, '')).filter(Boolean);
+        return books.length ? books.join(',') : null;
+    }
+
+    // Pide cuotas con auto-corrección: si el plan responde 403 diciendo qué casas
+    // permite, aprende esa lista y reintenta (y la reutiliza en adelante).
+    async _fetchOddsSmart(eventIds) {
+        if (this._allowedBookmakers) {
+            return await this._fetchOdds(eventIds, this._allowedBookmakers);
+        }
+        const bms = await this.getValidBookmakers();
+        try {
+            return await this.api.getOddsMulti(eventIds, bms);
+        } catch (e) {
+            const allowed = this._parseAllowedBookmakers(e.message);
+            if (allowed && allowed !== bms) {
+                this._allowedBookmakers = allowed;
+                console.log(`[Updater] Tu plan solo permite estas casas: ${allowed}. Las usaré a partir de ahora.`);
+                return await this._fetchOdds(eventIds, allowed);
+            }
+            console.error(`[Updater] Cuotas con [${bms}] falló: ${e.message}`);
+            return [];
+        }
+    }
+
+    // Pide cuotas devolviendo [] si falla (para no romper el ciclo de actualización).
     async _fetchOdds(eventIds, bookmakers) {
         try {
             return await this.api.getOddsMulti(eventIds, bookmakers);
@@ -164,20 +195,7 @@ class SportsUpdater {
         let oddsData = [];
 
         try {
-            await this.getValidBookmakers(); // asegura _bookmakers y _safeBookmakers (cacheado)
-            // Si ya sabemos que tus casas preferidas no dan cuotas, vamos directos a las seguras.
-            const primary = (this._useSafeOnly && this._safeBookmakers) ? this._safeBookmakers : this._bookmakers;
-            let oddsResp = primary ? await this._fetchOdds(eventIds, primary) : [];
-            // Si tus casas preferidas no dieron cuotas (p. ej. una es de pago), reintenta con recreativas.
-            if ((!oddsResp || oddsResp.length === 0) && this._safeBookmakers && this._safeBookmakers !== primary) {
-                console.log(`[Updater] Reintento de cuotas con recreativas: ${this._safeBookmakers}`);
-                oddsResp = await this._fetchOdds(eventIds, this._safeBookmakers);
-                if (oddsResp && oddsResp.length > 0) {
-                    // Recuerda la decisión: a partir de ahora usa solo las seguras (ahorra llamadas a la API).
-                    this._useSafeOnly = true;
-                    console.log('[Updater] Tus casas preferidas no dan cuotas en este plan; usaré recreativas de ahora en adelante.');
-                }
-            }
+            const oddsResp = await this._fetchOddsSmart(eventIds);
             if (!this._oddsSampleLogged && Array.isArray(oddsResp) && oddsResp[0]) {
                 this._oddsSampleLogged = true;
                 console.log('[Updater] Ejemplo de cuota cruda:', JSON.stringify(oddsResp[0]).slice(0, 500));
@@ -210,6 +228,11 @@ class SportsUpdater {
     }
 
     async checkFinishedEvents() {
+        // El endpoint /events ya trae el marcador (scores.ft) de los partidos
+        // terminados, así que la liquidación funciona sin este endpoint. Si la API
+        // rechaza el formato de IDs (400), lo desactivamos para no ensuciar el log
+        // ni gastar llamadas: los resultados llegan igual por la vía principal.
+        if (this._resultsDisabled) return { checked: 0, skipped: true };
         console.log('[Updater] Verificando eventos finalizados...');
 
         const events = this.cache.db.prepare(`
@@ -230,7 +253,13 @@ class SportsUpdater {
         try {
             results = await this.api.getEventResults(eventIds);
         } catch (error) {
-            console.error(`[Updater] Error obteniendo resultados: ${error.message}`);
+            // Un 400 (formato de ID) no se va a arreglar reintentando: desactiva este paso.
+            if (/\b400\b/.test(error.message) || /invalid event id/i.test(error.message)) {
+                this._resultsDisabled = true;
+                console.log('[Updater] Resultados por /events/results desactivados (el marcador ya viene en /events).');
+            } else {
+                console.error(`[Updater] Error obteniendo resultados: ${error.message}`);
+            }
             return { checked: 0, error: error.message };
         }
 
