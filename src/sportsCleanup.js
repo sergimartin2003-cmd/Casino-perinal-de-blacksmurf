@@ -26,13 +26,16 @@ class SportsCleanup {
         `).all();
 
         for (const event of pendingEvents) {
-            let winner = 'draw';
-            if (event.home_score > event.away_score) winner = 'home';
-            else if (event.away_score > event.home_score) winner = 'away';
-
             const betting = new (require('./sportsBetting'))(this.db.name);
+            // Sin marcador (0-0 y sin confirmar) = no hay resultado fiable -> reembolsa.
+            if (!event.home_score && !event.away_score) {
+                const r = betting.cancelEventBets(event.id);
+                console.log(`[Cleanup] Evento ${event.id} sin resultado: ${r.cancelled} apuestas reembolsadas`);
+                continue;
+            }
+            const winner = event.home_score > event.away_score ? 'home' : event.away_score > event.home_score ? 'away' : 'draw';
             const results = betting.settleEventBets(event.id, winner);
-            console.log(`[Cleanup] Evento ${event.id}: ${results.won} ganadas`);
+            console.log(`[Cleanup] Evento ${event.id}: ${results.won} ganadas (${event.home_score}-${event.away_score})`);
         }
 
         const deleteStmt = this.db.prepare(`

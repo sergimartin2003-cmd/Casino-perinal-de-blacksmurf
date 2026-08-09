@@ -86,6 +86,9 @@ class SportsUpdater {
             away_team: e.away ?? e.away_team ?? e.awayTeam ?? e.teams?.away ?? '?',
             start_time: e.date ?? e.start_time ?? e.commence_time ?? e.starts ?? e.startTime ?? null,
             status: mapStatus(e.status),
+            // Marcador (si el evento ya viene con resultado).
+            home_score: e.scores?.home ?? e.scores?.periods?.ft?.home ?? null,
+            away_score: e.scores?.away ?? e.scores?.periods?.ft?.away ?? null,
         })).filter((e) => e.id && e.start_time);
 
         if (norm.length === 0) {
@@ -94,6 +97,13 @@ class SportsUpdater {
         }
 
         this.cache.saveEvents(norm, sport);
+
+        // Guarda el marcador real de los que ya vienen con resultado (para liquidar bien).
+        for (const e of norm) {
+            if (e.status === 'finished' && e.home_score != null && e.away_score != null) {
+                this.cache.updateEventStatus(e.id, 'finished', e.home_score, e.away_score);
+            }
+        }
 
         const eventIds = norm.map((e) => e.id);
         let oddsData = [];
@@ -192,12 +202,15 @@ class SportsUpdater {
             const betting = new SportsBetting(this.cache.db.name);
 
             for (const event of pendingBets) {
-                let winner = 'draw';
-                if (event.home_score > event.away_score) winner = 'home';
-                else if (event.away_score > event.home_score) winner = 'away';
-
-                const settleResults = betting.settleEventBets(event.id, winner);
-                console.log(`[Updater] Evento ${event.id} resuelto`);
+                // Sin marcador (0-0 y sin confirmar) = no hay resultado fiable -> reembolsa.
+                if (!event.home_score && !event.away_score) {
+                    const r = betting.cancelEventBets(event.id);
+                    console.log(`[Updater] Evento ${event.id} sin resultado: ${r.cancelled} apuestas reembolsadas`);
+                    continue;
+                }
+                const winner = event.home_score > event.away_score ? 'home' : event.away_score > event.home_score ? 'away' : 'draw';
+                betting.settleEventBets(event.id, winner);
+                console.log(`[Updater] Evento ${event.id} resuelto (${event.home_score}-${event.away_score})`);
             }
         }
 
