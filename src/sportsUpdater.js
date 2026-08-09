@@ -196,35 +196,60 @@ class SportsUpdater {
 
         try {
             const oddsResp = await this._fetchOddsSmart(eventIds);
-            if (!this._oddsSampleLogged && Array.isArray(oddsResp) && oddsResp[0]) {
+            // La respuesta puede venir como array o envuelta en {data|events|results}.
+            const evs = Array.isArray(oddsResp) ? oddsResp : (oddsResp?.data || oddsResp?.events || oddsResp?.results || []);
+            if (!this._oddsSampleLogged && evs[0]) {
                 this._oddsSampleLogged = true;
-                console.log('[Updater] Ejemplo de cuota cruda:', JSON.stringify(oddsResp[0]).slice(0, 500));
+                console.log('[Updater] Ejemplo de cuota cruda:', JSON.stringify(evs[0]).slice(0, 800));
             }
-            if (Array.isArray(oddsResp)) {
-                for (const odd of oddsResp) {
-                    // Busca las cuotas moneyline en varias formas posibles.
-                    const m = odd.odds || odd.moneyline || odd.markets?.moneyline || odd.markets?.h2h || {};
-                    oddsData.push({
-                        event_id: String(odd.eventId ?? odd.event_id ?? odd.id ?? ''),
-                        bookmaker: odd.bookmaker ?? odd.bookmaker_name ?? odd.bookie ?? 'Unknown',
-                        market_type: 'moneyline',
-                        // saveOdds lee item.odds.{home,away,draw}
-                        odds: {
-                            home: m.home ?? m['1'] ?? null,
-                            draw: m.draw ?? m['X'] ?? m.x ?? null,
-                            away: m.away ?? m['2'] ?? null,
-                        },
-                    });
-                }
-                if (oddsData.length > 0) this.cache.saveOdds(oddsData);
-            }
+            oddsData = this._parseOddsResponse(evs);
+            if (oddsData.length > 0) this.cache.saveOdds(oddsData);
         } catch (error) {
             console.error(`[Updater] Error obteniendo cuotas: ${error.message}`);
         }
 
         const upcoming = this.cache.getActiveEvents(sport, 100).length;
-        console.log(`[Updater] ${sport}: ${allEvents.length} recibidos · ${norm.length} guardados · ${upcoming} próximos (para el panel)`);
+        console.log(`[Updater] ${sport}: ${allEvents.length} recibidos · ${norm.length} guardados · ${upcoming} próximos · ${oddsData.length} cuotas (para el panel)`);
         return { updated: norm.length, upcoming, odds: oddsData.length };
+    }
+
+    // Convierte la respuesta de /odds/multi al formato que espera saveOdds.
+    // Forma real de odds-api.io: cada evento trae bookmakers[] y cada casa
+    // markets[] con el mercado 'ML' (moneyline), cuyas odds son [{home,draw,away}].
+    // Se aceptan variantes de nombres por robustez ante cambios del proveedor.
+    _parseOddsResponse(events) {
+        const norm = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+        const ML_NAMES = new Set(['ml', '1x2', 'moneyline', 'h2h', 'matchodds', 'moneyline3way', '3way', 'headtohead', 'fulltimeresult']);
+        const out = [];
+        for (const ev of (events || [])) {
+            const evId = String(ev.id ?? ev.eventId ?? ev.event_id ?? '');
+            if (!evId) continue;
+            // bookmakers: array de {name, markets} o un objeto {NombreCasa: {...}}.
+            const bookmakers = Array.isArray(ev.bookmakers) ? ev.bookmakers
+                : (ev.bookmakers && typeof ev.bookmakers === 'object')
+                    ? Object.entries(ev.bookmakers).map(([name, v]) => ({ name, ...(v || {}) }))
+                    : [];
+            for (const bk of bookmakers) {
+                const bookieName = bk.name ?? bk.bookmaker ?? bk.key ?? 'Unknown';
+                // markets: array de {name, odds} o un objeto {NombreMercado: odds}.
+                const markets = Array.isArray(bk.markets) ? bk.markets
+                    : (bk.markets && typeof bk.markets === 'object')
+                        ? Object.entries(bk.markets).map(([name, v]) => ({ name, ...(v && typeof v === 'object' ? v : { odds: v }) }))
+                        : [];
+                const ml = markets.find((m) => ML_NAMES.has(norm(m.name ?? m.key ?? m.type)));
+                // La línea puede ser un array (historial: cogemos la última) o un objeto.
+                const line = ml
+                    ? (Array.isArray(ml.odds) ? ml.odds[ml.odds.length - 1] : (ml.odds ?? ml))
+                    : (bk.moneyline || bk.ml || bk.odds || null);
+                if (!line || typeof line !== 'object') continue;
+                const home = line.home ?? line['1'] ?? line.h ?? null;
+                const draw = line.draw ?? line['X'] ?? line.x ?? line.d ?? null;
+                const away = line.away ?? line['2'] ?? line.a ?? null;
+                if (home == null && away == null) continue; // nada útil
+                out.push({ event_id: evId, bookmaker: bookieName, market_type: 'moneyline', odds: { home, draw, away } });
+            }
+        }
+        return out;
     }
 
     async checkFinishedEvents() {
