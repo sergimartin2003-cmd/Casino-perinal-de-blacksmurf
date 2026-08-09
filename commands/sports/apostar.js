@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder, MessageFlags } = require('discord.js');
 const SportsCache = require('../../src/sportsCache');
 const SportsBetting = require('../../src/sportsBetting');
 
@@ -38,14 +38,14 @@ module.exports = {
         if (!event) {
             return interaction.reply({
                 content: '❌ Evento no encontrado.',
-                ephemeral: true
+                flags: MessageFlags.Ephemeral
             });
         }
 
         if (event.status === 'finished') {
             return interaction.reply({
                 content: '❌ Este evento ya finalizó.',
-                ephemeral: true
+                flags: MessageFlags.Ephemeral
             });
         }
 
@@ -53,7 +53,7 @@ module.exports = {
         if (!odds || !odds.markets) {
             return interaction.reply({
                 content: '❌ No hay cuotas disponibles para este evento.',
-                ephemeral: true
+                flags: MessageFlags.Ephemeral
             });
         }
 
@@ -77,7 +77,7 @@ module.exports = {
         if (!oddValue) {
             return interaction.reply({
                 content: '❌ Cuota no disponible para esta selección.',
-                ephemeral: true
+                flags: MessageFlags.Ephemeral
             });
         }
 
@@ -108,7 +108,7 @@ module.exports = {
         } catch (error) {
             await interaction.reply({
                 content: `❌ Error: ${error.message}`,
-                ephemeral: true
+                flags: MessageFlags.Ephemeral
             });
         }
     }

@@ -25,6 +25,7 @@ Bot de casino para Discord con **economía de moneda ficticia** (💎 **Nova**).
 - `/cripto` 📈 — predice si una cripto **subirá o bajará en una ventana de tiempo real** (30s, 1m, 5m, 15m, 30m o 1h). Se compara el precio real de CoinGecko al abrir y al cerrar; el resultado se publica en el canal cuando vence la ventana (aunque el bot se reinicie, la apuesta se resuelve igual)
 - `/coinflip` 🪙 — cara o cruz, doble o nada
 - `/loteria` 🎟️ — compra boletos para un **bote común**; sorteo programado con ganador **ponderado por boletos** (la casa se queda un %). Subcomandos: `comprar`, `bote` y `sortear` (admin/owner)
+- 🎯 **Apuestas deportivas** (opcional, requiere `ODDS_API_KEY` de [odds-api.io](https://odds-api.io)). Un **panel clickable** publica un mensaje por partido en el canal `config.sports.boardChannel` con botones (Local/Empate/Visitante) y sus cuotas reales; se apuesta con un clic y se **autoborra** cuando el partido termina. El saldo es el mismo del casino. Comandos: `/mercados` (lista), `/apostar`, `/mis-apuestas` y `/limpiar-eventos` (admin). Los eventos, cuotas y resultados se bajan solos cada 15 min y se liquidan solos (reembolsando si no hay resultado confirmado). Sin `ODDS_API_KEY`, todo esto queda desactivado y el casino funciona igual.
 
 > En cualquier apuesta puedes escribir `all`, `half`, `1k` o `2m`.
 > Tras cada partida, el botón **🔄 Volver a jugar** repite con la misma apuesta sin reescribir el comando.

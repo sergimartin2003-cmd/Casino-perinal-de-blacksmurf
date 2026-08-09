@@ -1,4 +1,4 @@
-const { SlashCommandBuilder } = require('discord.js');
+const { SlashCommandBuilder, MessageFlags } = require('discord.js');
 const SportsCleanup = require('../../../src/sportsCleanup');
 
 module.exports = {
@@ -16,7 +16,7 @@ module.exports = {
         if (!interaction.member.permissions.has('Administrator')) {
             return interaction.reply({
                 content: '❌ Solo administradores pueden usar este comando.',
-                ephemeral: true
+                flags: MessageFlags.Ephemeral
             });
         }
 
@@ -25,7 +25,7 @@ module.exports = {
 
         await interaction.reply({
             content: `🔄 Limpiando eventos con más de ${days} días...`,
-            ephemeral: true
+            flags: MessageFlags.Ephemeral
         });
 
         const results = await cleanup.cleanupOldEvents(days);

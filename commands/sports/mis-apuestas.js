@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder, MessageFlags } = require('discord.js');
 const SportsBetting = require('../../src/sportsBetting');
 
 module.exports = {
@@ -14,7 +14,7 @@ module.exports = {
         if (bets.length === 0) {
             return interaction.reply({
                 content: '📭 No tienes apuestas registradas.',
-                ephemeral: true
+                flags: MessageFlags.Ephemeral
             });
         }
 

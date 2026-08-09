@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder, MessageFlags } = require('discord.js');
 const SportsCache = require('../../src/sportsCache');
 
 module.exports = {
@@ -30,7 +30,7 @@ module.exports = {
         if (events.length === 0) {
             return interaction.reply({
                 content: '❌ No hay eventos disponibles en este momento.',
-                ephemeral: true
+                flags: MessageFlags.Ephemeral
             });
         }
 
