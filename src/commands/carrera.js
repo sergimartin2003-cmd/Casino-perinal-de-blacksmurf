@@ -147,7 +147,13 @@ module.exports = {
       }
 
       // --- La carrera ---
-      placeBet(userId, wager);
+      // Guard: el saldo pudo agotarse mientras elegía caballo (juego en paralelo).
+      if (!placeBet(userId, wager)) {
+        await interaction
+          .editReply({ embeds: [base(config.colors.red).setTitle('🏇 Carrera').setDescription('❌ Te quedaste sin saldo para esta carrera.')], components: [] })
+          .catch(() => {});
+        return false;
+      }
       const oddsPick = lineup[pick].odds;
       const pos = lineup.map(() => 0);
       const winner = pickWinner(lineup);

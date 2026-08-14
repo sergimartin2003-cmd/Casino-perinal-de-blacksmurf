@@ -45,7 +45,10 @@ module.exports = {
     const betDef = BETS[type];
 
     const round = async () => {
-      placeBet(interaction.user.id, wager);
+      if (!placeBet(interaction.user.id, wager)) {
+        await interaction.editReply({ content: '❌ Te quedaste sin saldo para esta ronda.', embeds: [], components: [] }).catch(() => {});
+        return;
+      }
 
       // Animación de tirada
       for (let i = 0; i < 3; i++) {

@@ -69,7 +69,11 @@ module.exports = {
     const wager = r.amount;
 
     const round = async () => {
-      placeBet(interaction.user.id, wager);
+      // Guard: si el saldo se agotó (p. ej. jugando en paralelo), no se juega gratis.
+      if (!placeBet(interaction.user.id, wager)) {
+        await interaction.editReply({ content: '❌ Te quedaste sin saldo para esta tirada.', embeds: [], components: [] }).catch(() => {});
+        return;
+      }
       addJackpot(wager * config.jackpot.contribution); // aportación en vivo (editable con /config)
 
       const cols = [spinReel(), spinReel(), spinReel()];

@@ -33,7 +33,10 @@ module.exports = {
 
     const round = (response) =>
       new Promise((done) => {
-        placeBet(uid, wager);
+        if (!placeBet(uid, wager)) {
+          interaction.editReply({ content: '❌ Te quedaste sin saldo para esta ronda.', embeds: [], components: [] }).catch(() => {});
+          return done();
+        }
         const deck = newDeck();
         let current = deck.pop();
         let mult = 1;

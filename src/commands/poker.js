@@ -74,7 +74,10 @@ module.exports = {
 
     const round = (response) =>
       new Promise((done) => {
-        placeBet(interaction.user.id, wager);
+        if (!placeBet(interaction.user.id, wager)) {
+          interaction.editReply({ content: '❌ Te quedaste sin saldo para esta ronda.', embeds: [], components: [] }).catch(() => {});
+          return done();
+        }
         const deck = newDeck();
         const hand = [deck.pop(), deck.pop(), deck.pop(), deck.pop(), deck.pop()];
         const held = [false, false, false, false, false];

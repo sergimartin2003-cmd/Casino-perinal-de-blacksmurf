@@ -31,7 +31,10 @@ module.exports = {
     const wager = r.amount;
 
     const round = async () => {
-      placeBet(interaction.user.id, wager);
+      if (!placeBet(interaction.user.id, wager)) {
+        await interaction.editReply({ content: '❌ Te quedaste sin saldo para esta ronda.', embeds: [], components: [] }).catch(() => {});
+        return;
+      }
       await interaction.editReply({
         embeds: [base(config.colors.primary).setTitle('🪙 Lanzando la moneda…').setDescription('🔄 girando…')],
         components: [],
