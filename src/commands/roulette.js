@@ -28,15 +28,25 @@ const WHEEL = [
 const wheelIdx = (n) => WHEEL.indexOf(n);
 const cellOf = (n) => `${colorOf(n)} ${String(n).padStart(2, ' ')}`;
 
-// Tira de la rueda centrada en `idx`, con la casilla central resaltada (bajo el marcador).
-const wheelStrip = (idx, span = 2) => {
+// Columna vertical de la rueda centrada en `idx`. La casilla del medio es
+// DONDE ESTÁ LA BOLA (marcada con 🎯 ➡️ … ⬅️); las de arriba/abajo son sus
+// vecinas en la rueda. Se lee de arriba abajo y deja clarísimo dónde cae.
+const wheelColumn = (idx, span = 2) => {
   const W = WHEEL.length;
-  const cells = [];
+  const lines = [];
   for (let o = -span; o <= span; o++) {
     const n = WHEEL[(((idx + o) % W) + W) % W];
-    cells.push(o === 0 ? `【 ${cellOf(n)} 】` : cellOf(n));
+    lines.push(o === 0 ? `🎯 ➡️ **${cellOf(n)}** ⬅️` : `▫️ ${cellOf(n)}`);
   }
-  return cells.join('   ');
+  return lines.join('\n');
+};
+
+// Etiqueta de velocidad según lo que le queda a la bola para pararse.
+const spinPhase = (framesLeft, total) => {
+  if (framesLeft > total * 0.6) return '💨 girando rápido…';
+  if (framesLeft > total * 0.3) return '🌀 dando vueltas…';
+  if (framesLeft > 0) return '🐌 frenando…';
+  return '🎯 ¡la bola se detiene!';
 };
 
 // Propiedades del número ganador (para el marcador de resultado).
@@ -313,15 +323,19 @@ module.exports = {
       const delays = [200, 220, 250, 290, 340, 400, 470, 560, 670, 800, 950];
       const travel = advances.reduce((a, b) => a + b, 0);
       let idx = (((resultIdx - travel) % WHEEL.length) + WHEEL.length) % WHEEL.length;
-      for (let f = 0; f < advances.length; f++) {
+      const totalFrames = advances.length;
+      for (let f = 0; f < totalFrames; f++) {
         idx = (idx + advances[f]) % WHEEL.length;
-        const marker = f < advances.length - 1 ? '🔻 la bola gira…' : '🔻 **¡frenando!**';
+        const framesLeft = totalFrames - 1 - f;
         await interaction
           .editReply({
             embeds: [
               base(config.colors.primary)
                 .setTitle('🎡 La ruleta gira…')
-                .setDescription(`${marker}\n\n${wheelStrip(idx)}`)
+                .setDescription(
+                  '🔻 **La bola cae en el número del centro** 🎯\n\n' +
+                    `${wheelColumn(idx)}\n\n${spinPhase(framesLeft, totalFrames)}`
+                )
                 .addFields({ name: 'Total apostado', value: coins(staked), inline: true }),
             ],
             components: [],
@@ -348,8 +362,8 @@ module.exports = {
 
       const outcome = net > 0 ? '🎉 **¡Ganaste!**' : net === 0 ? '😐 **Ni fu ni fa.**' : '💀 **La casa gana.**';
       const embed = base(net > 0 ? config.colors.green : net === 0 ? config.colors.gold : config.colors.red)
-        .setTitle(`🎡 La bola cae en  ${colorOf(result)} ${result}`)
-        .setDescription(`${wheelStrip(resultIdx)}\n🔺 ${numberProps(result)}\n\n${outcome}`)
+        .setTitle(`🎡 La bola se para en  ${colorOf(result)} ${result}`)
+        .setDescription(`${wheelColumn(resultIdx)}\n\n🔺 ${numberProps(result)}\n\n${outcome}`)
         .addFields(
           { name: `Tus apuestas (${bets.size})`, value: clampField(lines.join('\n')) },
           { name: 'Total apostado', value: coins(staked), inline: true },
