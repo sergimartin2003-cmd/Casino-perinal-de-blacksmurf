@@ -52,11 +52,13 @@ const odd = (v) => (v ? Number(v).toFixed(2) : '—');
 function renderEvent(event) {
   const ml = moneyline(event.id);
   const when = event.start_time ? new Date(event.start_time).toLocaleString('es-ES') : 'Por confirmar';
+  const act = betting.getEventBetSummary(event.id);
+  const actividad = act.n > 0 ? `🎫 ${act.n} apuesta(s) · 💰 ${act.staked} en juego` : '🎫 Sé el primero en apostar';
+
   const embed = new EmbedBuilder()
     .setColor(0x0099ff)
     .setTitle(`${sportEmoji(event.sport)} ${event.home_team} vs ${event.away_team}`)
-    .setDescription(`🏷️ ${event.league || 'Liga'}\n📅 ${when}`)
-    .setFooter({ text: `Evento ${event.id}` });
+    .setDescription(`🏷️ ${event.league || 'Liga'}\n📅 ${when}\n${actividad}`);
 
   const row = new ActionRowBuilder();
   if (ml.home) {
@@ -76,17 +78,20 @@ function renderEvent(event) {
     embed.addFields({ name: '💸 Cuotas', value: '_Aún sin cuotas. En cuanto la casa las publique, aparecerán los botones para apostar._' });
     return { embeds: [embed], components: [] };
   }
-  // Muestra las cuotas también en el texto y explica cómo apostar (más claro).
+  // Cuotas también en texto + pie con la instrucción (tarjeta compacta).
   const cuotas = [
-    `**1** (gana ${event.home_team}): \`${odd(ml.home)}\``,
-    ml.draw ? `**X** (empate): \`${odd(ml.draw)}\`` : null,
-    `**2** (gana ${event.away_team}): \`${odd(ml.away)}\``,
+    `**1** — gana ${event.home_team}: \`${odd(ml.home)}\``,
+    ml.draw ? `**X** — empate: \`${odd(ml.draw)}\`` : null,
+    `**2** — gana ${event.away_team}: \`${odd(ml.away)}\``,
   ].filter(Boolean).join('\n');
-  embed.addFields(
-    { name: '💸 Cuotas (moneyline)', value: cuotas },
-    { name: 'ℹ️ Cómo apostar', value: 'Pulsa un botón (1 / X / 2), escribe cuánto y listo. Si aciertas cobras **apuesta × cuota**.' }
+  embed.addFields({ name: '💸 Cuotas (1 · X · 2)', value: cuotas });
+  embed.setFooter({ text: 'Pulsa 1 / X / 2 para apostar · si aciertas cobras apuesta × cuota' });
+
+  // Segunda fila: consultar tus apuestas de este partido sin salir del panel.
+  const row2 = new ActionRowBuilder().addComponents(
+    new ButtonBuilder().setCustomId(`sbetmine:${event.id}`).setEmoji('🎫').setLabel('Mis apuestas').setStyle(ButtonStyle.Secondary)
   );
-  return { embeds: [embed], components: [row] };
+  return { embeds: [embed], components: [row, row2] };
 }
 
 /** Sincroniza el panel: publica nuevos, refresca existentes y borra los que ya no van. */
@@ -179,9 +184,13 @@ async function handleBetModal(interaction) {
   try {
     const bet = betting.placeBet(interaction.user.id, eventId, 'moneyline', selection, oddValue, r.amount);
     const selName = selection === 'home' ? event.home_team : selection === 'away' ? event.away_team : 'Empate';
+    const nuevoSaldo = betting.getUserBalance(interaction.user.id);
     return interaction
       .reply({
-        content: `✅ Apostado **${r.amount}** a **${selName}** @${oddValue} (${event.home_team} vs ${event.away_team}).\n💰 Ganancia potencial: **${bet.potentialWinnings}** · Apuesta #${bet.betId}`,
+        content:
+          `✅ Apostado **${r.amount}** a **${selName}** @${oddValue} (${event.home_team} vs ${event.away_team}).\n` +
+          `💰 Ganancia potencial: **${bet.potentialWinnings}** · Apuesta #${bet.betId}\n` +
+          `🪙 Te quedan **${nuevoSaldo}** ${config.currency.symbol}`,
         flags: MessageFlags.Ephemeral,
       })
       .catch(() => {});
@@ -190,4 +199,26 @@ async function handleBetModal(interaction) {
   }
 }
 
-module.exports = { start, sync, renderEvent, handleBetButton, handleBetModal };
+/** Muestra al usuario sus apuestas en un partido (botón 🎫 Mis apuestas). */
+async function handleMyBets(interaction) {
+  const eventId = interaction.customId.split(':').slice(1).join(':');
+  const event = cache.getEventById(eventId);
+  const bets = betting.getUserEventBets(interaction.user.id, eventId);
+  if (!bets.length) {
+    return interaction
+      .reply({ content: 'ℹ️ Aún no has apostado en este partido.', flags: MessageFlags.Ephemeral })
+      .catch(() => {});
+  }
+  const selName = (s) =>
+    s === 'home' ? event?.home_team || 'Local' : s === 'away' ? event?.away_team || 'Visitante' : 'Empate';
+  const emoji = (st) => (st === 'won' ? '✅' : st === 'lost' ? '❌' : st === 'cancelled' ? '🚫' : '⏳');
+  const lines = bets.map(
+    (b) => `${emoji(b.status)} ${selName(b.selection)} @${b.odds} · ${b.amount} → ${b.potential_winnings} pot.`
+  );
+  const title = event ? `${event.home_team} vs ${event.away_team}` : 'este partido';
+  return interaction
+    .reply({ content: `🎫 **Tus apuestas · ${title}**\n${lines.join('\n')}`, flags: MessageFlags.Ephemeral })
+    .catch(() => {});
+}
+
+module.exports = { start, sync, renderEvent, handleBetButton, handleBetModal, handleMyBets };

@@ -87,6 +87,41 @@ function euros(coins) {
   return (coins / rate).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 }
 
+// --- Apuestas deportivas del día (su propio apartado en el reporte) ---
+// Las fechas de sports_bets son UTC (CURRENT_TIMESTAMP); 'localtime' las pasa a
+// la hora local del servidor para que cuadren con la clave de día local.
+const sportsPlacedStmt = db.prepare(`
+  SELECT COUNT(*) AS n, COALESCE(SUM(amount), 0) AS staked
+  FROM sports_bets WHERE date(placed_at, 'localtime') = ?
+`);
+const sportsSettledStmt = db.prepare(`
+  SELECT
+    SUM(CASE WHEN status = 'won'  THEN 1 ELSE 0 END)                      AS won_n,
+    SUM(CASE WHEN status = 'lost' THEN 1 ELSE 0 END)                      AS lost_n,
+    COALESCE(SUM(CASE WHEN status = 'lost' THEN amount END), 0)           AS house_win,
+    COALESCE(SUM(CASE WHEN status = 'won'  THEN potential_winnings END), 0) AS payout,
+    COALESCE(SUM(CASE WHEN status = 'won'  THEN amount END), 0)           AS won_stake
+  FROM sports_bets
+  WHERE status IN ('won', 'lost') AND date(settled_at, 'localtime') = ?
+`);
+
+/** Resumen de apuestas deportivas de un día (P&L de la casa sobre lo liquidado). */
+function sportsSummary(day) {
+  const p = sportsPlacedStmt.get(day) || { n: 0, staked: 0 };
+  const s = sportsSettledStmt.get(day) || {};
+  const ganancias = s.house_win || 0;                          // apuestas perdidas: la casa se queda el importe
+  const perdidas = Math.max(0, (s.payout || 0) - (s.won_stake || 0)); // apuestas ganadas: lo pagado por encima de lo apostado
+  return {
+    placedN: p.n || 0,
+    staked: p.staked || 0,
+    wonN: s.won_n || 0,
+    lostN: s.lost_n || 0,
+    ganancias,
+    perdidas,
+    neto: ganancias - perdidas,
+  };
+}
+
 /** Construye el texto del reporte para un día. `vips` se pasa ya calculado. */
 function buildReport(day, vips = 0) {
   const s = getStatsStmt.get(day) || { bets: 0, wagered: 0, returned: 0, sold: 0 };
@@ -96,6 +131,8 @@ function buildReport(day, vips = 0) {
   const pct = s.wagered > 0 ? (beneficio / s.wagered) * 100 : 0;
   const sold = s.sold || 0;
   const topLine = top ? `<@${top.user_id}> (${fmt(top.wagered)} monedas)` : '—';
+  const sp = sportsSummary(day);
+  const signo = (n) => (n >= 0 ? '+' : '');
 
   return [
     `📊 **REPORTE DEL DÍA ${dayLabel(day)}**`,
@@ -110,6 +147,13 @@ function buildReport(day, vips = 0) {
     `VIPs activos: ${fmt(vips)}`,
     `Monedas compradas: ${fmt(sold)}`,
     `Ingresos estimados (ventas): ${euros(sold)} €`,
+    DIVIDER,
+    '⚽ **APUESTAS DEPORTIVAS**',
+    `Apuestas colocadas: ${fmt(sp.placedN)} (${fmt(sp.staked)} monedas)`,
+    `Liquidadas hoy: ${fmt(sp.wonN)} ganadas · ${fmt(sp.lostN)} perdidas`,
+    `💰 Ganancias del casino: ${fmt(sp.ganancias)} monedas · ${euros(sp.ganancias)} €`,
+    `💸 Pérdidas del casino: ${fmt(sp.perdidas)} monedas · ${euros(sp.perdidas)} €`,
+    `📈 Neto deportivas: ${signo(sp.neto)}${fmt(sp.neto)} monedas · ${euros(sp.neto)} €`,
   ].join('\n');
 }
 

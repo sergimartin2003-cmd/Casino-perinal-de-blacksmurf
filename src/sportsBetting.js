@@ -75,6 +75,23 @@ class SportsBetting {
         return stmt.all(eventId);
     }
 
+    /** Actividad de un evento: nº de apuestas pendientes y monedas en juego. */
+    getEventBetSummary(eventId) {
+        return this.db.prepare(`
+            SELECT COUNT(*) AS n, COALESCE(SUM(amount), 0) AS staked
+            FROM sports_bets WHERE event_id = ? AND status = 'pending'
+        `).get(eventId);
+    }
+
+    /** Últimas apuestas de un usuario en un evento concreto (para "Mis apuestas"). */
+    getUserEventBets(userId, eventId, limit = 10) {
+        return this.db.prepare(`
+            SELECT selection, odds, amount, potential_winnings, status
+            FROM sports_bets WHERE user_id = ? AND event_id = ?
+            ORDER BY placed_at DESC LIMIT ?
+        `).all(userId, eventId, limit);
+    }
+
     settleEventBets(eventId, winner) {
         const bets = this.getPendingBetsForEvent(eventId);
 

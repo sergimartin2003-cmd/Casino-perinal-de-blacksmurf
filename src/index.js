@@ -97,6 +97,7 @@ client.once(Events.ClientReady, (c) => {
 client.on(Events.InteractionCreate, async (interaction) => {
   // Panel de apuestas deportivas: botón de opción → ventana de cantidad → apuesta.
   if (interaction.isButton() && interaction.customId.startsWith('sbet:')) return sportsBoard.handleBetButton(interaction);
+  if (interaction.isButton() && interaction.customId.startsWith('sbetmine:')) return sportsBoard.handleMyBets(interaction);
   if (interaction.isModalSubmit() && interaction.customId.startsWith('sbetamt:')) return sportsBoard.handleBetModal(interaction);
 
   if (!interaction.isChatInputCommand()) return;
