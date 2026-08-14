@@ -19,6 +19,37 @@ const spin37 = () => Math.floor(Math.random() * 37);
 const RED = new Set([1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36]);
 const colorOf = (n) => (n === 0 ? '🟢' : RED.has(n) ? '🔴' : '⚫');
 
+// Orden REAL de la rueda europea (un solo cero). Sirve para animar el giro
+// mostrando los números vecinos pasando bajo el marcador, como en una ruleta física.
+const WHEEL = [
+  0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23,
+  10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26,
+];
+const wheelIdx = (n) => WHEEL.indexOf(n);
+const cellOf = (n) => `${colorOf(n)} ${String(n).padStart(2, ' ')}`;
+
+// Tira de la rueda centrada en `idx`, con la casilla central resaltada (bajo el marcador).
+const wheelStrip = (idx, span = 2) => {
+  const W = WHEEL.length;
+  const cells = [];
+  for (let o = -span; o <= span; o++) {
+    const n = WHEEL[(((idx + o) % W) + W) % W];
+    cells.push(o === 0 ? `【 ${cellOf(n)} 】` : cellOf(n));
+  }
+  return cells.join('   ');
+};
+
+// Propiedades del número ganador (para el marcador de resultado).
+const numberProps = (n) => {
+  if (n === 0) return '🟢 Verde · el cero (gana la casa en las simples)';
+  return [
+    RED.has(n) ? '🔴 Rojo' : '⚫ Negro',
+    n % 2 === 0 ? 'Par' : 'Impar',
+    n <= 18 ? 'Bajo (1-18)' : 'Alto (19-36)',
+    n <= 12 ? 'Docena 1' : n <= 24 ? 'Docena 2' : 'Docena 3',
+  ].join(' · ');
+};
+
 // Fichas disponibles (valor de cada ficha que se coloca en la mesa).
 const CHIPS = [10, 100, 1000, 10000];
 const chipLabel = (v) => (v >= 1000 ? `${v / 1000}k` : String(v));
@@ -272,24 +303,33 @@ module.exports = {
         return 'stop';
       }
 
-      // Animación de giro.
-      for (let k = 0; k < 3; k++) {
-        const teaser = spin37();
+      // El resultado se decide ya; la animación solo desacelera hasta él.
+      const result = spin37();
+      const resultIdx = wheelIdx(result);
+
+      // Fotogramas que desaceleran: cada vez avanzan menos y esperan más,
+      // de modo que la bola "frena" y cae justo en el número ganador.
+      const advances = [5, 5, 4, 4, 3, 3, 2, 2, 1, 1, 1];
+      const delays = [200, 220, 250, 290, 340, 400, 470, 560, 670, 800, 950];
+      const travel = advances.reduce((a, b) => a + b, 0);
+      let idx = (((resultIdx - travel) % WHEEL.length) + WHEEL.length) % WHEEL.length;
+      for (let f = 0; f < advances.length; f++) {
+        idx = (idx + advances[f]) % WHEEL.length;
+        const marker = f < advances.length - 1 ? '🔻 la bola gira…' : '🔻 **¡frenando!**';
         await interaction
           .editReply({
             embeds: [
               base(config.colors.primary)
                 .setTitle('🎡 La ruleta gira…')
-                .setDescription(`${colorOf(teaser)} **${teaser}** …`)
-                .addFields({ name: 'Total apostado', value: coins(staked) }),
+                .setDescription(`${marker}\n\n${wheelStrip(idx)}`)
+                .addFields({ name: 'Total apostado', value: coins(staked), inline: true }),
             ],
             components: [],
           })
           .catch(() => {});
-        await sleep(650);
+        await sleep(delays[f]);
       }
-
-      const result = spin37();
+      // idx === resultIdx aquí: la tira queda centrada en el número ganador.
       let returned = 0;
       const lines = [];
       for (const b of bets.values()) {
@@ -306,9 +346,10 @@ module.exports = {
       recordResult(userId, { wagered: staked, net, game: 'ruleta' });
       const bal = getUser(userId).balance;
 
+      const outcome = net > 0 ? '🎉 **¡Ganaste!**' : net === 0 ? '😐 **Ni fu ni fa.**' : '💀 **La casa gana.**';
       const embed = base(net > 0 ? config.colors.green : net === 0 ? config.colors.gold : config.colors.red)
-        .setTitle(`🎡 Salió  ${colorOf(result)} ${result}`)
-        .setDescription(net > 0 ? '🎉 **¡Ganaste!**' : net === 0 ? '😐 **Ni fu ni fa.**' : '💀 **La casa gana.**')
+        .setTitle(`🎡 La bola cae en  ${colorOf(result)} ${result}`)
+        .setDescription(`${wheelStrip(resultIdx)}\n🔺 ${numberProps(result)}\n\n${outcome}`)
         .addFields(
           { name: `Tus apuestas (${bets.size})`, value: clampField(lines.join('\n')) },
           { name: 'Total apostado', value: coins(staked), inline: true },
