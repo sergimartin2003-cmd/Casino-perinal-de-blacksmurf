@@ -145,7 +145,8 @@ class SportsUpdater {
 
         if (allEvents.length === 0) {
             try {
-                const events = await this.api.getEvents(sport, null, 50);
+                // Pedimos bastantes para pillar los que aún no se han jugado (los apostables).
+                const events = await this.api.getEvents(sport, null, 100);
                 allEvents = events || [];
             } catch (error) {
                 console.error(`[Updater] Error sin filtro: ${error.message}`);
@@ -191,8 +192,17 @@ class SportsUpdater {
             }
         }
 
-        const eventIds = norm.map((e) => e.id);
+        // Solo pedimos cuotas de los partidos APOSTABLES (próximos): así el panel
+        // siempre tiene cuotas para sus botones y no malgastamos llamadas a la API
+        // (ni el cupo diario) pidiendo cuotas de partidos ya jugados.
+        const bettable = this.cache.getActiveEvents(sport, 50);
+        const eventIds = bettable.map((e) => e.id);
         let oddsData = [];
+
+        if (eventIds.length === 0) {
+            console.log(`[Updater] ${sport}: ${allEvents.length} recibidos · ${norm.length} guardados · 0 próximos · 0 cuotas (para el panel)`);
+            return { updated: norm.length, upcoming: 0, odds: 0 };
+        }
 
         try {
             const oddsResp = await this._fetchOddsSmart(eventIds);
@@ -208,7 +218,7 @@ class SportsUpdater {
             console.error(`[Updater] Error obteniendo cuotas: ${error.message}`);
         }
 
-        const upcoming = this.cache.getActiveEvents(sport, 100).length;
+        const upcoming = eventIds.length;
         console.log(`[Updater] ${sport}: ${allEvents.length} recibidos · ${norm.length} guardados · ${upcoming} próximos · ${oddsData.length} cuotas (para el panel)`);
         return { updated: norm.length, upcoming, odds: oddsData.length };
     }

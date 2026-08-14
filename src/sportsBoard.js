@@ -17,6 +17,7 @@ const db = require('./database/db');
 const SportsCache = require('./sportsCache');
 const SportsBetting = require('./sportsBetting');
 const { resolveBet } = require('./lib/bet');
+const { getUser } = require('./lib/economy');
 const config = require('./config');
 
 const DB_PATH = './data/casino.db';
@@ -44,6 +45,9 @@ function moneyline(eventId) {
   return (bk && odds.markets[bk].moneyline) || {};
 }
 
+// Formatea una cuota (1.85) o pone '—' si no hay.
+const odd = (v) => (v ? Number(v).toFixed(2) : '—');
+
 /** Construye el embed + botones de un evento. */
 function renderEvent(event) {
   const ml = moneyline(event.id);
@@ -57,21 +61,31 @@ function renderEvent(event) {
   const row = new ActionRowBuilder();
   if (ml.home) {
     row.addComponents(
-      new ButtonBuilder().setCustomId(`sbet:home:${event.id}`).setLabel(`${event.home_team} (${ml.home})`.slice(0, 80)).setStyle(ButtonStyle.Success)
+      new ButtonBuilder().setCustomId(`sbet:home:${event.id}`).setLabel(`1 · ${event.home_team} (${odd(ml.home)})`.slice(0, 80)).setStyle(ButtonStyle.Success)
     );
   }
   if (ml.draw) {
-    row.addComponents(new ButtonBuilder().setCustomId(`sbet:draw:${event.id}`).setLabel(`Empate (${ml.draw})`.slice(0, 80)).setStyle(ButtonStyle.Secondary));
+    row.addComponents(new ButtonBuilder().setCustomId(`sbet:draw:${event.id}`).setLabel(`X · Empate (${odd(ml.draw)})`.slice(0, 80)).setStyle(ButtonStyle.Secondary));
   }
   if (ml.away) {
     row.addComponents(
-      new ButtonBuilder().setCustomId(`sbet:away:${event.id}`).setLabel(`${event.away_team} (${ml.away})`.slice(0, 80)).setStyle(ButtonStyle.Primary)
+      new ButtonBuilder().setCustomId(`sbet:away:${event.id}`).setLabel(`2 · ${event.away_team} (${odd(ml.away)})`.slice(0, 80)).setStyle(ButtonStyle.Primary)
     );
   }
   if (row.components.length === 0) {
-    embed.addFields({ name: 'Cuotas', value: '_Aún sin cuotas disponibles._' });
+    embed.addFields({ name: '💸 Cuotas', value: '_Aún sin cuotas. En cuanto la casa las publique, aparecerán los botones para apostar._' });
     return { embeds: [embed], components: [] };
   }
+  // Muestra las cuotas también en el texto y explica cómo apostar (más claro).
+  const cuotas = [
+    `**1** (gana ${event.home_team}): \`${odd(ml.home)}\``,
+    ml.draw ? `**X** (empate): \`${odd(ml.draw)}\`` : null,
+    `**2** (gana ${event.away_team}): \`${odd(ml.away)}\``,
+  ].filter(Boolean).join('\n');
+  embed.addFields(
+    { name: '💸 Cuotas (moneyline)', value: cuotas },
+    { name: 'ℹ️ Cómo apostar', value: 'Pulsa un botón (1 / X / 2), escribe cuánto y listo. Si aciertas cobras **apuesta × cuota**.' }
+  );
   return { embeds: [embed], components: [row] };
 }
 
@@ -157,6 +171,7 @@ async function handleBetModal(interaction) {
   if (!oddValue) {
     return interaction.reply({ content: '❌ Cuota no disponible para esa selección.', flags: MessageFlags.Ephemeral }).catch(() => {});
   }
+  getUser(interaction.user.id); // crea el usuario con saldo inicial si es su primera vez
   const balance = betting.getUserBalance(interaction.user.id);
   const r = resolveBet(interaction.fields.getTextInputValue('amount'), balance);
   if (r.error) return interaction.reply({ content: `❌ ${r.error}`, flags: MessageFlags.Ephemeral }).catch(() => {});
