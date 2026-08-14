@@ -4,10 +4,21 @@ class SportsCache {
     constructor(dbPath) {
         // Reutiliza la conexión compartida (una sola por proceso) salvo en tests.
         this.db = sharedDb.openFor(dbPath);
+        this._stmts = new Map(); // caché de prepared statements por SQL
+    }
+
+    /** Prepara (y cachea) un statement. Se compila UNA vez, de forma perezosa. */
+    _p(sql) {
+        let s = this._stmts.get(sql);
+        if (!s) {
+            s = this.db.prepare(sql);
+            this._stmts.set(sql, s);
+        }
+        return s;
     }
 
     saveEvents(events, sport) {
-        const stmt = this.db.prepare(`
+        const stmt = this._p(`
             INSERT OR REPLACE INTO sports_events
             (id, sport, league, home_team, away_team, start_time, status, last_updated)
             VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
@@ -31,7 +42,7 @@ class SportsCache {
     }
 
     saveOdds(oddsData) {
-        const stmt = this.db.prepare(`
+        const stmt = this._p(`
             INSERT OR REPLACE INTO sports_odds
             (event_id, bookmaker, market_type, home_odds, away_odds, draw_odds,
              spread, over_odds, under_odds, last_updated)
@@ -75,20 +86,16 @@ class SportsCache {
         query += ' ORDER BY start_time ASC LIMIT ?';
         params.push(limit);
 
-        const stmt = this.db.prepare(query);
-        return stmt.all(...params);
+        // Se cachea por la SQL construida (dos variantes: con y sin filtro de deporte).
+        return this._p(query).all(...params);
     }
 
     getEventById(eventId) {
-        const stmt = this.db.prepare('SELECT * FROM sports_events WHERE id = ?');
-        return stmt.get(eventId);
+        return this._p('SELECT * FROM sports_events WHERE id = ?').get(eventId);
     }
 
     getOddsForEvent(eventId) {
-        const stmt = this.db.prepare(`
-            SELECT * FROM sports_odds WHERE event_id = ?
-        `);
-        return stmt.all(eventId);
+        return this._p('SELECT * FROM sports_odds WHERE event_id = ?').all(eventId);
     }
 
     getFormattedOdds(eventId) {
@@ -125,49 +132,43 @@ class SportsCache {
     }
 
     updateEventStatus(eventId, status, homeScore = 0, awayScore = 0) {
-        const stmt = this.db.prepare(`
+        this._p(`
             UPDATE sports_events
             SET status = ?, home_score = ?, away_score = ?, last_updated = CURRENT_TIMESTAMP
             WHERE id = ?
-        `);
-        stmt.run(status, homeScore, awayScore, eventId);
+        `).run(status, homeScore, awayScore, eventId);
     }
 
     cleanupOldEvents(daysToKeep = 7) {
-        const stmt = this.db.prepare(`
+        this._p(`
             UPDATE sports_events
             SET status = 'finished'
             WHERE status != 'finished'
             AND datetime(start_time) < datetime('now', ?)
-        `);
-        stmt.run(`-${daysToKeep} days`);
+        `).run(`-${daysToKeep} days`);
 
-        const deleteStmt = this.db.prepare(`
+        this._p(`
             DELETE FROM sports_events
             WHERE status = 'finished'
             AND datetime(start_time) < datetime('now', ?)
-        `);
-        deleteStmt.run(`-${daysToKeep + 3} days`);
+        `).run(`-${daysToKeep + 3} days`);
     }
 
     getStats() {
         const stats = {};
-        const activeStmt = this.db.prepare(`
-            SELECT COUNT(*) as count FROM sports_events WHERE status != 'finished'
-        `);
-        stats.activeEvents = activeStmt.get().count;
+        stats.activeEvents = this._p(
+            `SELECT COUNT(*) as count FROM sports_events WHERE status != 'finished'`
+        ).get().count;
 
-        const sportStmt = this.db.prepare(`
+        stats.eventsBySport = this._p(`
             SELECT sport, COUNT(*) as count FROM sports_events
             WHERE status != 'finished'
             GROUP BY sport
-        `);
-        stats.eventsBySport = sportStmt.all();
+        `).all();
 
-        const betStmt = this.db.prepare(`
-            SELECT COUNT(*) as count FROM sports_bets WHERE status = 'pending'
-        `);
-        stats.pendingBets = betStmt.get().count;
+        stats.pendingBets = this._p(
+            `SELECT COUNT(*) as count FROM sports_bets WHERE status = 'pending'`
+        ).get().count;
 
         return stats;
     }

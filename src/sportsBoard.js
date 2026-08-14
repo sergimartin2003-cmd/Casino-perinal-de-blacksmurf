@@ -54,6 +54,11 @@ function renderEvent(event) {
   const when = event.start_time ? new Date(event.start_time).toLocaleString('es-ES') : 'Por confirmar';
   const act = betting.getEventBetSummary(event.id);
   const actividad = act.n > 0 ? `🎫 ${act.n} apuesta(s) · 💰 ${act.staked} en juego` : '🎫 Sé el primero en apostar';
+  // Firma del contenido: si no cambia, el panel no reedita el mensaje (ahorra API).
+  const sig = JSON.stringify([
+    event.home_team, event.away_team, event.league, event.start_time, event.status,
+    ml.home, ml.draw, ml.away, act.n, act.staked,
+  ]);
 
   const embed = new EmbedBuilder()
     .setColor(0x0099ff)
@@ -76,7 +81,7 @@ function renderEvent(event) {
   }
   if (row.components.length === 0) {
     embed.addFields({ name: '💸 Cuotas', value: '_Aún sin cuotas. En cuanto la casa las publique, aparecerán los botones para apostar._' });
-    return { embeds: [embed], components: [] };
+    return { embeds: [embed], components: [], sig };
   }
   // Cuotas también en texto + pie con la instrucción (tarjeta compacta).
   const cuotas = [
@@ -91,8 +96,11 @@ function renderEvent(event) {
   const row2 = new ActionRowBuilder().addComponents(
     new ButtonBuilder().setCustomId(`sbetmine:${event.id}`).setEmoji('🎫').setLabel('Mis apuestas').setStyle(ButtonStyle.Secondary)
   );
-  return { embeds: [embed], components: [row, row2] };
+  return { embeds: [embed], components: [row, row2], sig };
 }
+
+// Última firma publicada por evento (en memoria): evita reeditar sin cambios.
+const lastSig = new Map();
 
 /** Sincroniza el panel: publica nuevos, refresca existentes y borra los que ya no van. */
 async function sync(client) {
@@ -109,22 +117,32 @@ async function sync(client) {
     if (!activeIds.has(row.event_id)) {
       await channel.messages.delete(row.message_id).catch(() => {});
       delBoardStmt.run(row.event_id);
+      lastSig.delete(row.event_id);
     }
   }
 
   // 2) Publica o refresca los eventos activos.
   for (const event of active) {
     const view = renderEvent(event);
+    const payload = { embeds: view.embeds, components: view.components };
     const existing = oneBoardStmt.get(event.id);
+
+    // Si el mensaje ya existe y el contenido no cambió, no llamamos a la API.
+    if (existing?.message_id && lastSig.get(event.id) === view.sig) continue;
+
     if (existing?.message_id) {
-      const msg = await channel.messages.fetch(existing.message_id).catch(() => null);
-      if (msg) {
-        await msg.edit(view).catch(() => {});
+      // Edita por ID directamente (sin fetch previo). Si ya no existe, se republica.
+      const ok = await channel.messages.edit(existing.message_id, payload).then(() => true).catch(() => false);
+      if (ok) {
+        lastSig.set(event.id, view.sig);
         continue;
       }
     }
-    const msg = await channel.send(view).catch(() => null);
-    if (msg) upsertBoardStmt.run(event.id, channelId, msg.id);
+    const msg = await channel.send(payload).catch(() => null);
+    if (msg) {
+      upsertBoardStmt.run(event.id, channelId, msg.id);
+      lastSig.set(event.id, view.sig);
+    }
   }
 }
 
