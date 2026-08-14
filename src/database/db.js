@@ -179,4 +179,22 @@ CREATE TABLE IF NOT EXISTS sports_board (
 );
 `);
 
+// Devuelve la conexión compartida si `dbPath` apunta a la BD real (evita abrir
+// un handle nuevo por instancia y la contención de bloqueos entre conexiones).
+// Solo abre una conexión propia para rutas distintas (p. ej. ':memory:' en tests).
+function openFor(dbPath) {
+  if (!dbPath) return db;
+  try {
+    const target = path.resolve(dbPath);
+    if (target === path.resolve(db.name)) return db;
+    // Cualquier ruta que apunte a data/casino.db ES la BD compartida, aunque el
+    // cwd no sea la raíz (evita partir los datos en dos ficheros por error).
+    if (target.endsWith(path.join('data', 'casino.db'))) return db;
+  } catch {
+    /* rutas atípicas -> conexión propia */
+  }
+  return new Database(dbPath);
+}
+db.openFor = openFor;
+
 module.exports = db;

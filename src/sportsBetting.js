@@ -1,8 +1,9 @@
-const Database = require('better-sqlite3');
+const sharedDb = require('./database/db');
 
 class SportsBetting {
     constructor(dbPath) {
-        this.db = new Database(dbPath);
+        // Reutiliza la conexión compartida (una sola por proceso) salvo en tests.
+        this.db = sharedDb.openFor(dbPath);
     }
 
     getUserBalance(userId) {
@@ -19,38 +20,34 @@ class SportsBetting {
     }
 
     placeBet(userId, eventId, betType, selection, odds, amount) {
-        const balance = this.getUserBalance(userId);
-        if (balance < amount) {
-            throw new Error('Saldo insuficiente');
-        }
-
-        const eventStmt = this.db.prepare(`
-            SELECT status FROM sports_events WHERE id = ? AND status != 'finished'
-        `);
-        const event = eventStmt.get(eventId);
+        const event = this.db
+            .prepare(`SELECT status FROM sports_events WHERE id = ? AND status != 'finished'`)
+            .get(eventId);
         if (!event) {
             throw new Error('Evento no disponible o ya finalizado');
         }
 
         const potentialWinnings = Math.floor(amount * odds);
 
-        const stmt = this.db.prepare(`
+        // Transacción atómica: vuelve a comprobar el saldo, lo descuenta e inserta
+        // la apuesta como un todo. Si algo falla, no queda ni saldo descontado ni
+        // apuesta a medias (evita descuadres).
+        const insertBet = this.db.prepare(`
             INSERT INTO sports_bets
             (user_id, event_id, bet_type, selection, odds, amount, potential_winnings)
             VALUES (?, ?, ?, ?, ?, ?, ?)
         `);
-        const result = stmt.run(userId, eventId, betType, selection, odds, amount, potentialWinnings);
+        const tx = this.db.transaction(() => {
+            if (this.getUserBalance(userId) < amount) {
+                throw new Error('Saldo insuficiente');
+            }
+            this.updateUserBalance(userId, -amount);
+            return insertBet.run(userId, eventId, betType, selection, odds, amount, potentialWinnings)
+                .lastInsertRowid;
+        });
 
-        this.updateUserBalance(userId, -amount);
-
-        return {
-            betId: result.lastInsertRowid,
-            eventId,
-            amount,
-            odds,
-            potentialWinnings,
-            selection
-        };
+        const betId = tx();
+        return { betId, eventId, amount, odds, potentialWinnings, selection };
     }
 
     getUserBets(userId, limit = 20) {

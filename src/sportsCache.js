@@ -1,8 +1,9 @@
-const Database = require('better-sqlite3');
+const sharedDb = require('./database/db');
 
 class SportsCache {
     constructor(dbPath) {
-        this.db = new Database(dbPath);
+        // Reutiliza la conexión compartida (una sola por proceso) salvo en tests.
+        this.db = sharedDb.openFor(dbPath);
     }
 
     saveEvents(events, sport) {

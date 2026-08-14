@@ -1,6 +1,7 @@
 const OddsApi = require('./oddsApi');
 const SportsCache = require('./sportsCache');
 const SportsCleanup = require('./sportsCleanup');
+const SportsBetting = require('./sportsBetting');
 const config = require('./config');
 
 // Mapea el estado de la Odds API a los estados internos.
@@ -16,6 +17,7 @@ class SportsUpdater {
         this.api = new OddsApi(apiKey);
         this.cache = new SportsCache(dbPath);
         this.cleanup = new SportsCleanup(dbPath, this.api);
+        this.betting = new SportsBetting(dbPath);
 
         // leagues vacío = trae eventos por DEPORTE (sin depender de slugs de liga,
         // que varían por proveedor). Se pueden reañadir ligas concretas por slug
@@ -330,18 +332,15 @@ class SportsUpdater {
         `).all();
 
         if (pendingBets.length > 0) {
-            const SportsBetting = require('./sportsBetting');
-            const betting = new SportsBetting(this.cache.db.name);
-
             for (const event of pendingBets) {
                 // Sin marcador (0-0 y sin confirmar) = no hay resultado fiable -> reembolsa.
                 if (!event.home_score && !event.away_score) {
-                    const r = betting.cancelEventBets(event.id);
+                    const r = this.betting.cancelEventBets(event.id);
                     console.log(`[Updater] Evento ${event.id} sin resultado: ${r.cancelled} apuestas reembolsadas`);
                     continue;
                 }
                 const winner = event.home_score > event.away_score ? 'home' : event.away_score > event.home_score ? 'away' : 'draw';
-                betting.settleEventBets(event.id, winner);
+                this.betting.settleEventBets(event.id, winner);
                 console.log(`[Updater] Evento ${event.id} resuelto (${event.home_score}-${event.away_score})`);
             }
         }

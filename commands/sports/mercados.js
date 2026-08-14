@@ -1,6 +1,9 @@
 const { SlashCommandBuilder, EmbedBuilder, MessageFlags } = require('discord.js');
 const SportsCache = require('../../src/sportsCache');
 
+// Instancia única (reutiliza la conexión compartida): no se crea por comando.
+const cache = new SportsCache('./data/casino.db');
+
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('mercados')
@@ -18,14 +21,9 @@ module.exports = {
 
     async execute(interaction) {
         const sport = interaction.options.getString('deporte') || 'all';
-        const cache = new SportsCache('./data/casino.db');
 
-        let events;
-        if (sport === 'all') {
-            events = cache.getActiveEvents(null, 25);
-        } else {
-            events = cache.getActiveEvents(sport, 25);
-        }
+        // Máx 10 para no chocar con los límites del embed (25 campos / 6000 chars).
+        const events = cache.getActiveEvents(sport === 'all' ? null : sport, 10);
 
         if (events.length === 0) {
             return interaction.reply({

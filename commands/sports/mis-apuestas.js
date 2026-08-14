@@ -1,6 +1,9 @@
 const { SlashCommandBuilder, EmbedBuilder, MessageFlags } = require('discord.js');
 const SportsBetting = require('../../src/sportsBetting');
 
+// Instancia única (reutiliza la conexión compartida): no se crea por comando.
+const betting = new SportsBetting('./data/casino.db');
+
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('mis-apuestas')
@@ -8,7 +11,6 @@ module.exports = {
 
     async execute(interaction) {
         const userId = interaction.user.id;
-        const betting = new SportsBetting('./data/casino.db');
         const bets = betting.getUserBets(userId, 20);
 
         if (bets.length === 0) {

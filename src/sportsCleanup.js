@@ -1,9 +1,12 @@
-const Database = require('better-sqlite3');
+const sharedDb = require('./database/db');
+const SportsBetting = require('./sportsBetting');
 
 class SportsCleanup {
     constructor(dbPath, oddsApi) {
-        this.db = new Database(dbPath);
+        // Reutiliza la conexión compartida (una sola por proceso) salvo en tests.
+        this.db = sharedDb.openFor(dbPath);
         this.oddsApi = oddsApi;
+        this.betting = new SportsBetting(dbPath);
     }
 
     async cleanupOldEvents(daysToKeep = 7) {
@@ -26,15 +29,14 @@ class SportsCleanup {
         `).all();
 
         for (const event of pendingEvents) {
-            const betting = new (require('./sportsBetting'))(this.db.name);
             // Sin marcador (0-0 y sin confirmar) = no hay resultado fiable -> reembolsa.
             if (!event.home_score && !event.away_score) {
-                const r = betting.cancelEventBets(event.id);
+                const r = this.betting.cancelEventBets(event.id);
                 console.log(`[Cleanup] Evento ${event.id} sin resultado: ${r.cancelled} apuestas reembolsadas`);
                 continue;
             }
             const winner = event.home_score > event.away_score ? 'home' : event.away_score > event.home_score ? 'away' : 'draw';
-            const results = betting.settleEventBets(event.id, winner);
+            const results = this.betting.settleEventBets(event.id, winner);
             console.log(`[Cleanup] Evento ${event.id}: ${results.won} ganadas (${event.home_score}-${event.away_score})`);
         }
 

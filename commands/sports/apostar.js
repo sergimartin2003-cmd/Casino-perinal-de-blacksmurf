@@ -1,6 +1,11 @@
 const { SlashCommandBuilder, EmbedBuilder, MessageFlags } = require('discord.js');
 const SportsCache = require('../../src/sportsCache');
 const SportsBetting = require('../../src/sportsBetting');
+const { getUser } = require('../../src/lib/economy');
+
+// Instancias únicas (reutilizan la conexión compartida): no se crean por comando.
+const cache = new SportsCache('./data/casino.db');
+const betting = new SportsBetting('./data/casino.db');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -31,8 +36,7 @@ module.exports = {
         const amount = interaction.options.getInteger('monto');
 
         const userId = interaction.user.id;
-        const cache = new SportsCache('./data/casino.db');
-        const betting = new SportsBetting('./data/casino.db');
+        getUser(userId); // crea el usuario con saldo inicial si es su primera vez
 
         const event = cache.getEventById(eventId);
         if (!event) {

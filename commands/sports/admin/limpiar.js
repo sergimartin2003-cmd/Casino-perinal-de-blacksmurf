@@ -1,6 +1,9 @@
 const { SlashCommandBuilder, MessageFlags } = require('discord.js');
 const SportsCleanup = require('../../../src/sportsCleanup');
 
+// Instancia única (reutiliza la conexión compartida): no se crea por comando.
+const cleanup = new SportsCleanup('./data/casino.db', null);
+
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('limpiar-eventos')
@@ -21,7 +24,6 @@ module.exports = {
         }
 
         const days = interaction.options.getInteger('dias') || 7;
-        const cleanup = new SportsCleanup('./data/casino.db', null);
 
         await interaction.reply({
             content: `🔄 Limpiando eventos con más de ${days} días...`,
