@@ -159,8 +159,10 @@ module.exports = {
       if (jackpotWon > 0) {
         announceJackpot(interaction.client, { userId: interaction.user.id, amount: jackpotWon }).catch(() => {});
       }
-      // Refresca el tablero fijo (el bote creció con esta tirada o se reinició).
-      jackpotBoard.refresh(interaction.client).catch(() => {});
+      // Solo forzamos el refresco inmediato al REVENTAR el bote (reinicio), que es
+      // lo importante de ver al instante. El crecimiento normal lo refleja el propio
+      // tablero cada boardRefreshMs, sin editar el mensaje en cada tirada (menos API).
+      if (jackpotWon > 0) jackpotBoard.refresh(interaction.client).catch(() => {});
     };
 
     await runGameLoop(interaction, wager, round);
