@@ -164,6 +164,19 @@ client.on(Events.InteractionCreate, async (interaction) => {
   }
 });
 
+// Red de seguridad: un error transitorio (interacción caducada a los 15 min, hipo
+// de la API de Discord, una promesa suelta en un colector) NO debe tumbar el bot.
+// Se registra y se sigue; con las operaciones de dinero ya transaccionales, seguir
+// vivo es seguro. Un fallo real y repetido se verá en el log.
+process.on('unhandledRejection', (reason) => {
+  console.error('[unhandledRejection]', reason instanceof Error ? reason.stack : reason);
+});
+process.on('uncaughtException', (err) => {
+  console.error('[uncaughtException]', err instanceof Error ? err.stack : err);
+});
+client.on(Events.Error, (err) => console.error('[client error]', err?.message ?? err));
+client.on(Events.ShardError, (err) => console.error('[shard error]', err?.message ?? err));
+
 if (!process.env.DISCORD_TOKEN) {
   console.error('❌ Falta DISCORD_TOKEN en el archivo .env');
   process.exit(1);
