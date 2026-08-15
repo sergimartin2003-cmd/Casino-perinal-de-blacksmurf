@@ -2,10 +2,17 @@ const Database = require('better-sqlite3');
 const path = require('path');
 const fs = require('fs');
 
+// Ruta de la base de datos. Por defecto data/casino.db; se puede reubicar con la
+// variable de entorno CASINO_DB_PATH (útil para tests aislados o para poner la BD
+// en un disco/volumen distinto).
 const dataDir = path.join(__dirname, '..', '..', 'data');
-if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+const dbFile = process.env.CASINO_DB_PATH
+  ? path.resolve(process.env.CASINO_DB_PATH)
+  : path.join(dataDir, 'casino.db');
+const dbDir = path.dirname(dbFile);
+if (!fs.existsSync(dbDir)) fs.mkdirSync(dbDir, { recursive: true });
 
-const db = new Database(path.join(dataDir, 'casino.db'));
+const db = new Database(dbFile);
 db.pragma('journal_mode = WAL');
 
 db.exec(`

@@ -68,6 +68,17 @@ https://discord.com/api/oauth2/authorize?client_id=CLIENT_ID&permissions=2147483
 ```
 El permiso incluye *Enviar mensajes* y *Usar comandos de aplicación*.
 
+### Tests
+```bash
+npm test   # ejecuta la suite (no toca tu base de datos real)
+```
+Cada test corre en su propia base de datos temporal (`CASINO_DB_PATH`), así que
+puedes lanzarlo con el bot en marcha sin riesgo. Cubre la integridad de monedas
+(apuestas, lotería, cripto, transferencias) y la lógica de apuestas deportivas.
+
+> 💡 Puedes reubicar la base de datos con la variable de entorno `CASINO_DB_PATH`
+> (por defecto `data/casino.db`), útil para ponerla en un disco/volumen aparte.
+
 ## ⚙️ Personalización
 
 > 💡 **Desde Discord:** el comando **`/config`** (admin/owner) permite cambiar la mayoría de estos ajustes **sin editar archivos ni reiniciar** — canales, jackpot, reporte diario, anti-fraude, backups y el **canal + rol de cada juego**. Los cambios se guardan en la base de datos (tabla `settings`) y se aplican al momento. `/config ver` muestra la configuración actual. Los valores de `config.js` son los **valores por defecto** si no se ha cambiado nada por `/config`.
