@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, MessageFlags } = require('discord.js');
-const { getUser, addBalance, setBalance, logTransfer } = require('../lib/economy');
+const { getUser, transfer } = require('../lib/economy');
 const { base } = require('../lib/embeds');
 const { coins } = require('../lib/format');
 const { resolveBet } = require('../lib/bet');
@@ -28,9 +28,10 @@ module.exports = {
     const r = resolveBet(interaction.options.getString('cantidad'), sender.balance);
     if (r.error) return interaction.reply({ content: `❌ ${r.error}`, flags: MessageFlags.Ephemeral });
 
-    setBalance(interaction.user.id, sender.balance - r.amount);
-    addBalance(target.id, r.amount);
-    logTransfer(interaction.user.id, target.id, r.amount); // auditoría de transferencias
+    // Transferencia atómica (descuenta, acredita y audita en una transacción).
+    if (!transfer(interaction.user.id, target.id, r.amount)) {
+      return interaction.reply({ content: '❌ No tienes saldo suficiente para esa transferencia.', flags: MessageFlags.Ephemeral });
+    }
 
     const embed = base(config.colors.green)
       .setTitle('💸 Transferencia realizada')

@@ -107,6 +107,24 @@ function logTransfer(fromId, toId, amount) {
   insertTransferStmt.run(fromId, toId, Math.round(amount), Date.now());
 }
 
+// Transfiere monedas de forma ATÓMICA: comprueba saldo, descuenta, acredita y
+// audita en UNA transacción. Devuelve false (sin tocar nada) si no hay saldo.
+// Al ir todo junto: ni medio-transferencias si algo falla, ni descuadres por
+// leer un saldo "viejo" (usa decrementos relativos, no un valor cacheado).
+const transferTx = db.transaction((fromId, toId, amount) => {
+  if (getUser(fromId).balance < amount) return false;
+  addBalance(fromId, -amount);
+  addBalance(toId, amount);
+  insertTransferStmt.run(fromId, toId, amount, Date.now());
+  return true;
+});
+
+function transfer(fromId, toId, amount) {
+  const amt = Math.round(amount);
+  if (!Number.isFinite(amt) || amt <= 0) return false;
+  return transferTx(fromId, toId, amt);
+}
+
 const insertAdminActionStmt = db.prepare(`
   INSERT INTO admin_actions (actor_id, target_id, action, amount, before_bal, after_bal, created_at)
   VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -217,6 +235,7 @@ module.exports = {
   addInvite,
   getInviteCount,
   logTransfer,
+  transfer,
   logAdminAction,
   gameEvents,
 };
