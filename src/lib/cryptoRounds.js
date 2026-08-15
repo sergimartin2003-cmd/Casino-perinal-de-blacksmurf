@@ -129,9 +129,13 @@ async function resolveDue(client) {
     // Sin precio real: reintentar más tarde, salvo que lleve demasiado colgada.
     if (!quote.live) {
       if (now > bet.close_at + REFUND_GRACE_MS) {
-        payout(bet.user_id, bet.wager);
-        recordResult(bet.user_id, { wagered: bet.wager, net: 0, game: 'cripto' });
-        markStmt.run(bet.id);
+        // Reembolso + marcar resuelta, atómico: si el bot se reinicia a medias no
+        // se paga dos veces (la apuesta queda resuelta o intacta, nunca a medias).
+        db.transaction(() => {
+          payout(bet.user_id, bet.wager);
+          recordResult(bet.user_id, { wagered: bet.wager, net: 0, game: 'cripto' });
+          markStmt.run(bet.id);
+        })();
         await announce(client, bet, resultEmbed(bet, bet.open_price, bet.open_price, 'refund', 0));
       }
       continue;
@@ -154,9 +158,12 @@ async function resolveDue(client) {
       returned = win ? bet.wager + net : 0;
     }
 
-    payout(bet.user_id, returned);
-    recordResult(bet.user_id, { wagered: bet.wager, net, game: 'cripto' });
-    markStmt.run(bet.id);
+    // Pago + marcar resuelta, atómico: un reinicio a medias no paga dos veces.
+    db.transaction(() => {
+      payout(bet.user_id, returned);
+      recordResult(bet.user_id, { wagered: bet.wager, net, game: 'cripto' });
+      markStmt.run(bet.id);
+    })();
     await announce(client, bet, resultEmbed(bet, openP, closeP, outcome, net));
   }
 }

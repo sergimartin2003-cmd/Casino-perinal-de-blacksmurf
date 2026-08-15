@@ -98,12 +98,16 @@ async function draw(client) {
 
   // Muy pocos participantes: se reembolsa y se abre ronda nueva.
   if (rows.length < L().minParticipants) {
-    for (const r of rows) {
-      payout(r.user_id, r.tickets * price);
-      recordResult(r.user_id, { wagered: r.tickets * price, net: 0, game: 'loteria', silent: true });
-    }
-    clearRoundStmt.run(st.round);
-    setState(st.round + 1, nextDraw);
+    // Todo (reembolsos + limpiar ronda + avanzar estado) en UNA transacción: si el
+    // bot se reinicia a medias, o se hizo todo o nada (evita reembolsar dos veces).
+    db.transaction(() => {
+      for (const r of rows) {
+        payout(r.user_id, r.tickets * price);
+        recordResult(r.user_id, { wagered: r.tickets * price, net: 0, game: 'loteria', silent: true });
+      }
+      clearRoundStmt.run(st.round);
+      setState(st.round + 1, nextDraw);
+    })();
     const res = { type: 'refunded', round: st.round, players: rows.length, totalTickets, pot };
     await announce(client, res);
     return res;
@@ -113,14 +117,18 @@ async function draw(client) {
   const winner = pickWeighted(rows, totalTickets);
   const cut = Math.floor(pot * L().houseCut);
   const prize = pot - cut;
-  payout(winner, prize);
-  for (const r of rows) {
-    const spend = r.tickets * price;
-    const net = (r.user_id === winner ? prize : 0) - spend;
-    recordResult(r.user_id, { wagered: spend, net, game: 'loteria', silent: true });
-  }
-  clearRoundStmt.run(st.round);
-  setState(st.round + 1, nextDraw);
+  // Pago + limpiar ronda + avanzar estado, atómico: si el bot se reinicia a medias
+  // no se paga dos veces al ganador (la ronda ya no vuelve a sortearse).
+  db.transaction(() => {
+    payout(winner, prize);
+    for (const r of rows) {
+      const spend = r.tickets * price;
+      const net = (r.user_id === winner ? prize : 0) - spend;
+      recordResult(r.user_id, { wagered: spend, net, game: 'loteria', silent: true });
+    }
+    clearRoundStmt.run(st.round);
+    setState(st.round + 1, nextDraw);
+  })();
 
   const res = {
     type: 'drawn',
