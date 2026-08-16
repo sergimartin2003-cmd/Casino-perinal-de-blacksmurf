@@ -1,0 +1,50 @@
+# Blueprint de Render para Nova Casino (opcional, solo de referencia).
+#
+# NOTA: esto NO modifica un servicio que ya tengas creado a mano en Render.
+# Solo se usa si conectas el repo como "Blueprint" (New > Blueprint). Sirve para
+# recrear el bot con la configuración correcta de un tirón.
+#
+# Un bot de Discord no necesita puerto, pero si el servicio es de tipo "web",
+# Render exige que algo escuche en $PORT: el bot ya abre un servidor de salud
+# mínimo en /health para eso (ver src/lib/health.js). Alternativa más simple:
+# cambiar "type: web" por "type: worker" (los workers no necesitan puerto).
+
+services:
+  - type: web
+    name: nova-casino-bot
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      # Secretos: se ponen en el dashboard de Render, NUNCA en el repo.
+      - key: DISCORD_TOKEN
+        sync: false
+      - key: CLIENT_ID
+        sync: false
+      - key: ODDS_API_KEY
+        sync: false
+
+    # ─────────────────────────────────────────────────────────────────────────
+    # PERSISTENCIA DE LA BASE DE DATOS (importante)
+    #
+    # En Render el disco es EFÍMERO: sin un disco persistente, data/casino.db se
+    # BORRA en cada deploy o reinicio -> se pierden saldos, jackpot, lotería, etc.
+    #
+    # Para conservarla, descomenta el bloque de abajo (requiere plan de pago, el
+    # 'free' no permite discos) y añade la variable CASINO_DB_PATH apuntando al
+    # disco. Cambia también 'plan: free' por 'plan: starter'.
+    #
+    #   envVars:
+    #     - key: CASINO_DB_PATH
+    #       value: /data/casino.db
+    #   disk:
+    #     name: casino-data
+    #     mountPath: /data
+    #     sizeGB: 1
+    #
+    # Si te quedas en 'free' (sin disco), activa las copias off-site en config.js
+    # (backup.channel o backup.webhookUrl) para no perder los datos entre deploys.
+    # ─────────────────────────────────────────────────────────────────────────

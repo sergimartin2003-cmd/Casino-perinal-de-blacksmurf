@@ -79,6 +79,20 @@ puedes lanzarlo con el bot en marcha sin riesgo. Cubre la integridad de monedas
 > 💡 Puedes reubicar la base de datos con la variable de entorno `CASINO_DB_PATH`
 > (por defecto `data/casino.db`), útil para ponerla en un disco/volumen aparte.
 
+## ☁️ Despliegue en Render (u otros)
+
+- **Tipo de servicio:** un bot de Discord no necesita puerto. Lo más simple es un
+  **Background Worker**. Si lo pones como **Web Service**, el bot abre un pequeño
+  servidor de salud en `$PORT` (`/health`) para que el deploy se considere sano.
+- **Persistencia (¡importante!):** en Render el disco es **efímero**. Sin un disco
+  persistente, `data/casino.db` se **borra en cada deploy** y se pierden saldos,
+  jackpot, lotería, etc. Para conservarla: añade un **disco** (plan de pago) y pon
+  `CASINO_DB_PATH=/data/casino.db`. Si te quedas en el plan gratis, activa las
+  **copias off-site** (`config.backup.channel` o `webhookUrl`) para no perder datos.
+- Hay un [`render.yaml`](render.yaml) de referencia con todo esto explicado. No
+  modifica un servicio ya creado a mano; solo sirve si conectas el repo como
+  *Blueprint*.
+
 ## ⚙️ Personalización
 
 > 💡 **Desde Discord:** el comando **`/config`** (admin/owner) permite cambiar la mayoría de estos ajustes **sin editar archivos ni reiniciar** — canales, jackpot, reporte diario, anti-fraude, backups y el **canal + rol de cada juego**. Los cambios se guardan en la base de datos (tabla `settings`) y se aplican al momento. `/config ver` muestra la configuración actual. Los valores de `config.js` son los **valores por defecto** si no se ha cambiado nada por `/config`.
