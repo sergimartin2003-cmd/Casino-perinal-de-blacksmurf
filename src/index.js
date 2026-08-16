@@ -17,6 +17,7 @@ const backup = require('./lib/backup');
 const SportsUpdater = require('./sportsUpdater');
 const SportsCleanup = require('./sportsCleanup');
 const sportsBoard = require('./sportsBoard');
+const health = require('./lib/health');
 const { isStaff } = require('./lib/owner');
 
 const ODDS_API_KEY = process.env.ODDS_API_KEY;
@@ -176,6 +177,13 @@ process.on('uncaughtException', (err) => {
 });
 client.on(Events.Error, (err) => console.error('[client error]', err?.message ?? err));
 client.on(Events.ShardError, (err) => console.error('[shard error]', err?.message ?? err));
+
+// Puerto de salud para plataformas tipo "Web Service" (p. ej. Render): si hay
+// PORT, se escucha ahí para que el deploy se considere sano. En local no hace nada.
+health.start(() => ({
+  bot: client.user ? client.user.tag : 'arrancando',
+  uptime: Math.floor(process.uptime()),
+}));
 
 if (!process.env.DISCORD_TOKEN) {
   console.error('❌ Falta DISCORD_TOKEN en el archivo .env');
