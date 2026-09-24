@@ -54,10 +54,14 @@ class OddsApi {
         return response.json();
     }
 
-    async getEvents(sport, league = null, limit = 20) {
+    async getEvents(sport, league = null, limit = 20, status = null) {
         let endpoint = `/events?sport=${this.sportsMap[sport]}`;
         if (league) {
             endpoint += `&league=${encodeURIComponent(league)}`;
+        }
+        // status='pending' pide solo los PRÓXIMOS (no jugados) = los apostables.
+        if (status) {
+            endpoint += `&status=${encodeURIComponent(status)}`;
         }
         endpoint += `&limit=${limit}`;
         return this._fetch(endpoint);

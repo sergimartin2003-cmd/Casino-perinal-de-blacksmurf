@@ -136,7 +136,8 @@ class SportsUpdater {
 
         for (const league of leagues) {
             try {
-                const events = await this.api.getEvents(sport, league, 20);
+                // 'pending' = solo próximos (apostables). Si el plan no lo soporta, abajo hay fallback.
+                const events = await this.api.getEvents(sport, league, 20, 'pending');
                 if (events && events.length > 0) {
                     allEvents = allEvents.concat(events);
                 }
@@ -145,9 +146,21 @@ class SportsUpdater {
             }
         }
 
+        // Sin ligas configuradas: pide PRIMERO los próximos (status=pending), que son
+        // los que se pueden apostar. Antes se pedía sin filtro y la API devolvía sobre
+        // todo partidos YA jugados -> panel vacío.
         if (allEvents.length === 0) {
             try {
-                // Pedimos bastantes para pillar los que aún no se han jugado (los apostables).
+                const upcoming = await this.api.getEvents(sport, null, 100, 'pending');
+                if (upcoming && upcoming.length > 0) allEvents = upcoming;
+            } catch (error) {
+                console.error(`[Updater] Error pidiendo próximos: ${error.message}`);
+            }
+        }
+
+        // Fallback: si el filtro 'pending' no dio nada (o el plan no lo admite), sin filtro.
+        if (allEvents.length === 0) {
+            try {
                 const events = await this.api.getEvents(sport, null, 100);
                 allEvents = events || [];
             } catch (error) {

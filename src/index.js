@@ -185,6 +185,21 @@ health.start(() => ({
   uptime: Math.floor(process.uptime()),
 }));
 
+// Aviso de persistencia: en hosts con disco EFÍMERO (Render "Web Service" sin
+// disco), la base de datos se borra en cada deploy -> se pierden saldos, apuestas
+// y eventos. Si detectamos que estamos hosteados (hay PORT) y la BD NO apunta a un
+// volumen persistente (CASINO_DB_PATH), lo avisamos bien claro en el log.
+if (process.env.PORT && !process.env.CASINO_DB_PATH) {
+  console.warn(
+    '⚠️  [PERSISTENCIA] Parece que corres en un host tipo "Web Service" (hay PORT) ' +
+      'pero CASINO_DB_PATH no apunta a un disco persistente.\n' +
+      '    La base de datos (data/casino.db) se BORRARÁ en cada deploy/reinicio: se ' +
+      'perderán saldos, apuestas y eventos.\n' +
+      '    Solución: añade un disco persistente y pon CASINO_DB_PATH=/ruta/al/disco/casino.db ' +
+      '(ver README > Despliegue en Render), o usa un "Background Worker" con disco.'
+  );
+}
+
 if (!process.env.DISCORD_TOKEN) {
   console.error('❌ Falta DISCORD_TOKEN en el archivo .env');
   process.exit(1);

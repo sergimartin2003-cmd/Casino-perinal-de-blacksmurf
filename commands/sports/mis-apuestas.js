@@ -41,9 +41,11 @@ module.exports = {
                                bet.status === 'lost' ? '❌' :
                                bet.status === 'cancelled' ? '🚫' : '⏳';
             const time = new Date(bet.placed_at).toLocaleString('es-ES');
+            // El evento puede haberse limpiado ya (LEFT JOIN -> equipos nulos).
+            const partido = bet.home_team ? `${bet.home_team} vs ${bet.away_team}` : `Partido ${bet.event_id}`;
 
             embed.addFields({
-                name: `${statusEmoji} ${bet.home_team} vs ${bet.away_team}`,
+                name: `${statusEmoji} ${partido}`,
                 value: `📅 ${time}\n🎯 ${bet.selection} (${bet.odds}x) - ${bet.amount} monedas\n💰 ${bet.potential_winnings || 0} potenciales`,
                 inline: false
             });

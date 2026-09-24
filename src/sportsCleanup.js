@@ -40,10 +40,14 @@ class SportsCleanup {
             console.log(`[Cleanup] Evento ${event.id}: ${results.won} ganadas (${event.home_score}-${event.away_score})`);
         }
 
+        // Solo borra eventos SIN apuestas: las claves foráneas están activas, así que
+        // borrar un evento con apuestas fallaría (FOREIGN KEY constraint) y además
+        // perderíamos el historial de /mis-apuestas. Los que tienen apuestas se quedan.
         const deleteStmt = this.db.prepare(`
             DELETE FROM sports_events
             WHERE status = 'finished'
             AND datetime(start_time) < datetime('now', ?)
+            AND id NOT IN (SELECT DISTINCT event_id FROM sports_bets)
         `);
         const deleted = deleteStmt.run(`-${daysToKeep + 3} days`);
 

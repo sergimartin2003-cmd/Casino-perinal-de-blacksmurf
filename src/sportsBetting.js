@@ -15,8 +15,10 @@ const SQL = {
     userEventBets: `SELECT selection, odds, amount, potential_winnings, status
         FROM sports_bets WHERE user_id = ? AND event_id = ?
         ORDER BY placed_at DESC LIMIT ?`,
+    // LEFT JOIN: la apuesta SIEMPRE aparece aunque su evento ya se haya limpiado
+    // (con INNER JOIN las apuestas de eventos borrados desaparecían del historial).
     userBets: `SELECT b.*, e.home_team, e.away_team, e.league, e.start_time
-        FROM sports_bets b JOIN sports_events e ON b.event_id = e.id
+        FROM sports_bets b LEFT JOIN sports_events e ON b.event_id = e.id
         WHERE b.user_id = ? ORDER BY b.placed_at DESC LIMIT ?`,
 };
 
